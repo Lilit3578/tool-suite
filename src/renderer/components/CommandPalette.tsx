@@ -315,10 +315,10 @@ export default function CommandPalette() {
                       <PopoverContent 
                         side="right" 
                         align="center"
-                        className={`w-auto max-w-[300px] ${isError ? 'border-red-500 bg-red-50' : ''}`}
+                        className={`w-auto max-w-[250px] ${isError ? 'border-red-500 bg-red-50' : ''}`}
                         style={{ pointerEvents: 'auto' }}
                       >
-                        <div className={`text-sm ${isError ? 'text-red-600' : ''}`}>
+                        <div className={`body text-sm ${isError ? 'text-red-600' : ''}`}>
                           {popoverContent}
                         </div>
                       </PopoverContent>
@@ -382,10 +382,10 @@ export default function CommandPalette() {
                   <PopoverContent 
                     side="right" 
                     align="center"
-                    className={`w-auto max-w-[300px] ${isError ? 'border-red-500 bg-red-50' : ''}`}
+                    className={`w-auto max-w-[250px] ${isError ? 'border-red-500 bg-red-50' : ''}`}
                     style={{ pointerEvents: 'auto' }}
                   >
-                    <div className={`text-sm ${isError ? 'text-red-600' : ''}`}>
+                    <div className={`body text-sm ${isError ? 'text-red-600' : ''}`}>
                       {popoverContent}
                     </div>
                   </PopoverContent>

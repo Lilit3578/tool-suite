@@ -816,8 +816,8 @@ label, button{
 .min-w-\[var\(--radix-select-trigger-width\)\]{
   min-width: var(--radix-select-trigger-width);
 }
-.max-w-\[300px\]{
-  max-width: 300px;
+.max-w-\[250px\]{
+  max-width: 250px;
 }
 .max-w-lg{
   max-width: 32rem;

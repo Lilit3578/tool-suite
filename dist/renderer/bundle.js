@@ -32948,9 +32948,9 @@ For more information, see https://radix-ui.com/primitives/docs/components/${titl
                           {
                             side: "right",
                             align: "center",
-                            className: `w-auto max-w-[300px] ${isError ? "border-red-500 bg-red-50" : ""}`,
+                            className: `w-auto max-w-[250px] ${isError ? "border-red-500 bg-red-50" : ""}`,
                             style: { pointerEvents: "auto" },
-                            children: /* @__PURE__ */ (0, import_jsx_runtime18.jsx)("div", { className: `text-sm ${isError ? "text-red-600" : ""}`, children: popoverContent })
+                            children: /* @__PURE__ */ (0, import_jsx_runtime18.jsx)("div", { className: `body text-sm ${isError ? "text-red-600" : ""}`, children: popoverContent })
                           }
                         )
                       ] }, s.id);
@@ -33004,9 +33004,9 @@ For more information, see https://radix-ui.com/primitives/docs/components/${titl
                       {
                         side: "right",
                         align: "center",
-                        className: `w-auto max-w-[300px] ${isError ? "border-red-500 bg-red-50" : ""}`,
+                        className: `w-auto max-w-[250px] ${isError ? "border-red-500 bg-red-50" : ""}`,
                         style: { pointerEvents: "auto" },
-                        children: /* @__PURE__ */ (0, import_jsx_runtime18.jsx)("div", { className: `text-sm ${isError ? "text-red-600" : ""}`, children: popoverContent })
+                        children: /* @__PURE__ */ (0, import_jsx_runtime18.jsx)("div", { className: `body text-sm ${isError ? "text-red-600" : ""}`, children: popoverContent })
                       }
                     )
                   ] }, a.id))
