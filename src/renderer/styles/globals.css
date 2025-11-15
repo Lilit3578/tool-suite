@@ -1,0 +1,178 @@
+@import url('https://fonts.googleapis.com/css2?family=Instrument+Serif:ital,wght@0,400;1,400&display=swap') layer(base);
+@import url('https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@100;200;300;400;500;600;700;800;900&display=swap') layer(base);
+@import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@100;200;300;400;500;600;700;800&display=swap') layer(base);
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Light mode variables */
+:root {
+  --ink-0: #FEFEFE;
+  --ink-100: rgba(20, 20, 20, 0.02);
+  --ink-200: rgba(20, 20, 20, 0.04);
+  --ink-300: rgba(20, 20, 20, 0.08);
+  --ink-400: rgba(20, 20, 20, 0.12);
+  --ink-500: rgba(20, 20, 20, 0.16);
+  --ink-600: rgba(20, 20, 20, 0.24);
+  --ink-700: rgba(20, 20, 20, 0.40);
+  --ink-800: rgba(20, 20, 20, 0.64);
+  --ink-900: rgba(20, 20, 20, 0.80);
+  --ink-1000: rgba(20, 20, 20, 1);
+}
+
+/* Dark mode variables */
+.dark {
+  --ink-0: #141414;
+  --ink-100: rgba(254, 254, 254, 0.02);
+  --ink-200: rgba(254, 254, 254, 0.04);
+  --ink-300: rgba(254, 254, 254, 0.08);
+  --ink-400: rgba(254, 254, 254, 0.12);
+  --ink-500: rgba(254, 254, 254, 0.16);
+  --ink-600: rgba(254, 254, 254, 0.24);
+  --ink-700: rgba(254, 254, 254, 0.40);
+  --ink-800: rgba(254, 254, 254, 0.64);
+  --ink-900: rgba(254, 254, 254, 0.80);
+  --ink-1000: rgba(254, 254, 254, 1);
+}
+
+/* Shadcn design system mapping */
+@layer base {
+  :root {
+    --background: 246 246 246;
+    --foreground: 20 20 20;
+
+    --card: 254 254 254;
+    --card-foreground: 20 20 20;
+
+    --popover: 254 254 254;
+    --popover-foreground: 20 20 20;
+
+    --primary: 20 20 20;
+    --primary-foreground: 254 254 254;
+
+    --secondary: 236 236 236;
+    --secondary-foreground: 20 20 20;
+
+    --muted: 217 217 217;
+    --muted-foreground: 20 20 20;
+
+    --accent: 10 104 245;
+    --accent-foreground: 254 254 254;
+
+    --destructive: 184 22 22;
+    --destructive-foreground: 254 254 254;
+
+    --border: 227 227 227;
+    --input: 217 217 217;
+    --ring: 10 104 245;
+
+    --chart-1: 10 104 245;
+    --chart-2: 173 58% 39%;
+    --chart-3: 197 37% 24%;
+    --chart-4: 43 74% 66%;
+    --chart-5: 27 87% 67%;
+
+    --radius: 0.5rem;
+  }
+
+  .dark {
+    --background: 20 20 20;
+    --foreground: 254 254 254;
+
+    --card: 20 20 20;
+    --card-foreground: 254 254 254;
+
+    --popover: 20 20 20;
+    --popover-foreground: 254 254 254;
+
+    --primary: 254 254 254;
+    --primary-foreground: 20 20 20;
+
+    --secondary: 57 57 57;
+    --secondary-foreground: 254 254 254;
+
+    --muted: 76 76 76;
+    --muted-foreground: 190 190 190;
+
+    --accent: 10 104 245;
+    --accent-foreground: 254 254 254;
+
+    --destructive: 184 22 22;
+    --destructive-foreground: 254 254 254;
+
+    --border: 48 48 48;
+    --input: 57 57 57;
+    --ring: 10 104 245;
+
+    --chart-1: 10 104 245;
+    --chart-2: 160 60% 45%;
+    --chart-3: 30 80% 55%;
+    --chart-4: 280 65% 60%;
+    --chart-5: 340 75% 55%;
+  }
+}
+
+/* --- Base semantic mapping --- */
+@layer base {
+  body {
+    @apply bg-background text-foreground;
+    font-family: 'Be Vietnam Pro', sans-serif;
+  }
+
+  h1 { @apply h1; }
+  h2 { @apply h2; }
+  p { @apply body; }
+  small { @apply small; }
+
+  strong, b { @apply font-medium; }
+  label, button {
+    @apply text-sm font-mono font-normal leading-tight uppercase;
+  }
+}
+
+/* --- Custom type classes --- */
+@layer components {
+  .h0 {
+    font-family: 'Instrument Serif', serif;
+    font-size: 15rem;
+    line-height: 1;
+    font-weight: 400;
+  }
+
+  .h1 {
+    font-family: 'Instrument Serif', serif;
+    font-size: 3.5rem;
+    line-height: 1.1;
+    font-weight: 400;
+  }
+
+  .h2 {
+    font-family: 'Instrument Serif', serif;
+    font-size: 1.25rem;
+    line-height: 1.2;
+    font-weight: 400;
+  }
+
+  .body {
+    font-family: 'Be Vietnam Pro', sans-serif;
+    font-size: 0.875rem;
+    line-height: 1.8;
+    font-weight: 300;
+  }
+
+  .small {
+    font-family: 'Be Vietnam Pro', sans-serif;
+    font-size: 0.75rem;
+    line-height: 1.5;
+    font-weight: 300;
+  }
+
+  .label {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.75rem;
+    line-height: 1.2;
+    font-weight: 400;
+    text-transform: uppercase;
+  }
+}

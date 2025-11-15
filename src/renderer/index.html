@@ -1,0 +1,30 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="UTF-8" />
+    <title>Command Palette</title>
+    <link rel="stylesheet" href="./bundle.css" />
+    <style>
+      body {
+        margin: 0;
+        padding: 0;
+        /* Background will be set by window config, default to transparent for flexibility */
+        background: transparent;
+        overflow: auto;
+      }
+      #root {
+        width: 100vw;
+        height: 100vh;
+      }
+      /* Ensure components can set their own backgrounds */
+      #root > * {
+        width: 100%;
+        height: 100%;
+      }
+    </style>
+  </head>
+  <body>
+    <div id="root"></div>
+    <script src="./bundle.js"></script>
+  </body>
+</html>

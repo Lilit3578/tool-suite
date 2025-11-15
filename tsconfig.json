@@ -1,0 +1,19 @@
+{
+  "compilerOptions": {
+    "target": "ES2020",
+    "module": "CommonJS",
+    "jsx": "react-jsx",
+    "strict": true,
+    "esModuleInterop": true,
+    "skipLibCheck": true,
+    "baseUrl": ".",
+    "paths": {
+      "*": ["src/*"], // Your existing alias
+      "@/*": ["src/renderer/*"] // The new alias for shadcn-ui
+    },
+    "outDir": "dist"
+  },
+  "include": [
+    "src/**/*"
+  ]
+}
