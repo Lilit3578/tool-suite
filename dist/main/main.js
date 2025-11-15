@@ -17382,6 +17382,23 @@ function registerIpcHandlers(widgetManager2, callbacks) {
   });
   import_electron3.ipcMain.handle("get-preferences", () => settingsManager.getAll());
   import_electron3.ipcMain.handle("set-preferences", (_, prefs) => settingsManager.setAll(prefs));
+  import_electron3.ipcMain.on("set-ignore-mouse-events", (event, ignore) => {
+    console.log("[IPC] set-ignore-mouse-events called with:", ignore);
+    const window = import_electron3.BrowserWindow.fromWebContents(event.sender);
+    if (window) {
+      console.log("[IPC] Setting ignore mouse events on window:", ignore);
+      const now = Date.now();
+      window._isIgnoringMouseEvents = ignore;
+      window._lastIgnoreMouseEventsTime = now;
+      if (ignore) {
+        ;
+        window._lastClickThroughActiveTime = now;
+      }
+      window.setIgnoreMouseEvents(ignore, { forward: true });
+    } else {
+      console.log("[IPC] Window not found!");
+    }
+  });
 }
 
 // src/main/widgets/text-translator.ts
@@ -17491,15 +17508,42 @@ async function createMainWindow() {
     props: { capturedText }
   });
   let blurTimeout = null;
+  const CLICK_THROUGH_DEBOUNCE = 50;
   mainWindow.removeAllListeners("blur");
   mainWindow.removeAllListeners("focus");
   mainWindow.on("blur", () => {
-    logger7.info("Palette blur event fired");
+    const isIgnoringMouseEvents = mainWindow?._isIgnoringMouseEvents || false;
+    const lastIgnoreMouseEventsTime = mainWindow?._lastIgnoreMouseEventsTime || 0;
+    const timeSinceStateChange = Date.now() - lastIgnoreMouseEventsTime;
+    if (isIgnoringMouseEvents && timeSinceStateChange < CLICK_THROUGH_DEBOUNCE) {
+      logger7.info("Palette blur event ignored (rapid mouse movement over transparent area)", {
+        isIgnoringMouseEvents,
+        timeSinceStateChange
+      });
+      return;
+    }
+    logger7.info("Palette blur event fired (treating as real blur/click)", {
+      isIgnoringMouseEvents,
+      timeSinceStateChange
+    });
     if (blurTimeout) {
       clearTimeout(blurTimeout);
     }
     blurTimeout = setTimeout(() => {
-      logger7.info("Blur timeout executing - hiding windows");
+      const currentIsIgnoring = mainWindow?._isIgnoringMouseEvents || false;
+      const currentLastTime = mainWindow?._lastIgnoreMouseEventsTime || 0;
+      const timeSinceChange = Date.now() - currentLastTime;
+      if (currentIsIgnoring && timeSinceChange < CLICK_THROUGH_DEBOUNCE) {
+        logger7.info("Blur timeout cancelled (rapid mouse movement)");
+        blurTimeout = null;
+        return;
+      }
+      if (mainWindow && !mainWindow.isDestroyed() && mainWindow.isFocused()) {
+        logger7.info("Blur timeout cancelled (window regained focus)");
+        blurTimeout = null;
+        return;
+      }
+      logger7.info("Blur timeout executing - hiding windows immediately");
       if (mainWindow && !mainWindow.isDestroyed()) {
         logger7.info("Hiding palette window");
         mainWindow.hide();
@@ -17509,7 +17553,7 @@ async function createMainWindow() {
         actionPopoverWindow.hide();
       }
       blurTimeout = null;
-    }, 200);
+    }, 100);
   });
   mainWindow.on("focus", () => {
     logger7.info("Palette focus event fired");
@@ -17517,6 +17561,9 @@ async function createMainWindow() {
       logger7.info("Cancelling blur timeout");
       clearTimeout(blurTimeout);
       blurTimeout = null;
+    }
+    if (mainWindow) {
+      mainWindow._isIgnoringMouseEvents = false;
     }
   });
   mainWindow.on("closed", () => {

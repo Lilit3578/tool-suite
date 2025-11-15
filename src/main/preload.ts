@@ -11,6 +11,9 @@ contextBridge.exposeInMainWorld('electronAPI', {
   getCapturedText: () => ipcRenderer.invoke('get-captured-text'),
   showActionPopover: (resultText: string, position: { x: number; y: number }) => 
     ipcRenderer.invoke('show-action-popover', resultText, position),
+  // Mouse events for click-through transparent areas
+  setIgnoreMouseEvents: (ignore: boolean) => 
+    ipcRenderer.send('set-ignore-mouse-events', ignore),
   // Component rendering events
   onComponentInit: (cb: (event: any, data: { type: string; props?: any }) => void) => 
     ipcRenderer.on('component-init', cb),

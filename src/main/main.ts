@@ -30,6 +30,7 @@ async function createMainWindow() {
   })
 
   let blurTimeout: NodeJS.Timeout | null = null
+  const CLICK_THROUGH_DEBOUNCE = 50 // Very short debounce - only ignore blur from rapid mouse movements
 
   // CRITICAL: Set up blur handler AFTER window is created
   // Remove any existing blur handlers first (window factory might have added one)
@@ -37,17 +38,59 @@ async function createMainWindow() {
   mainWindow.removeAllListeners('focus')
 
   // Blur handler - hide both palette and popover when clicking outside
+  // Only ignore blur if click-through is CURRENTLY active AND it was just enabled
+  // This allows clicks in transparent areas to immediately hide the window
   mainWindow.on('blur', () => {
-    logger.info('Palette blur event fired')
+    // Read state from window object (set by IPC handler)
+    const isIgnoringMouseEvents = (mainWindow as any)?._isIgnoringMouseEvents || false
+    const lastIgnoreMouseEventsTime = (mainWindow as any)?._lastIgnoreMouseEventsTime || 0
+    const timeSinceStateChange = Date.now() - lastIgnoreMouseEventsTime
+    
+    // Only ignore blur if:
+    // 1. Click-through is currently active (mouse is over transparent area)
+    // 2. AND it was just enabled very recently (within 50ms)
+    // This prevents hiding from rapid mouse movements, but allows clicks to work
+    if (isIgnoringMouseEvents && timeSinceStateChange < CLICK_THROUGH_DEBOUNCE) {
+      logger.info('Palette blur event ignored (rapid mouse movement over transparent area)', {
+        isIgnoringMouseEvents,
+        timeSinceStateChange
+      })
+      return
+    }
+    
+    // If click-through is active but it's been more than 50ms, treat as a real click
+    // This allows users to click in transparent areas to dismiss the window
+    logger.info('Palette blur event fired (treating as real blur/click)', { 
+      isIgnoringMouseEvents,
+      timeSinceStateChange 
+    })
     
     // Clear any existing timeout
     if (blurTimeout) {
       clearTimeout(blurTimeout)
     }
     
-    // Wait a bit to see if popover is being shown
+    // Shorter timeout for immediate response to clicks
     blurTimeout = setTimeout(() => {
-      logger.info('Blur timeout executing - hiding windows')
+      // Double-check: only cancel if click-through was just enabled (rapid movement)
+      const currentIsIgnoring = (mainWindow as any)?._isIgnoringMouseEvents || false
+      const currentLastTime = (mainWindow as any)?._lastIgnoreMouseEventsTime || 0
+      const timeSinceChange = Date.now() - currentLastTime
+      
+      if (currentIsIgnoring && timeSinceChange < CLICK_THROUGH_DEBOUNCE) {
+        logger.info('Blur timeout cancelled (rapid mouse movement)')
+        blurTimeout = null
+        return
+      }
+      
+      // Check if window regained focus (user clicked back on it)
+      if (mainWindow && !mainWindow.isDestroyed() && mainWindow.isFocused()) {
+        logger.info('Blur timeout cancelled (window regained focus)')
+        blurTimeout = null
+        return
+      }
+      
+      logger.info('Blur timeout executing - hiding windows immediately')
       
       // Hide palette
       if (mainWindow && !mainWindow.isDestroyed()) {
@@ -62,7 +105,7 @@ async function createMainWindow() {
       }
       
       blurTimeout = null
-    }, 200)
+    }, 100) // Reduced from 200ms for faster response
   })
 
   // Cancel blur timeout if palette regains focus
@@ -72,6 +115,10 @@ async function createMainWindow() {
       logger.info('Cancelling blur timeout')
       clearTimeout(blurTimeout)
       blurTimeout = null
+    }
+    // Reset click-through state tracking when window regains focus
+    if (mainWindow) {
+      (mainWindow as any)._isIgnoringMouseEvents = false
     }
   })
 
@@ -167,6 +214,9 @@ async function createActionPopoverWindow(resultText: string, position: { x: numb
     // Show without focusing (keep palette focused)
     actionPopoverWindow.showInactive()
     
+    // Override blur handler to also hide main window
+    setupActionPopoverBlurHandler(actionPopoverWindow)
+    
     logger.info('Action popover window updated and shown at:', pos)
     return actionPopoverWindow
   }
@@ -180,6 +230,9 @@ async function createActionPopoverWindow(resultText: string, position: { x: numb
     props: { resultText: text },
   })
   
+  // Override blur handler to also hide main window
+  setupActionPopoverBlurHandler(actionPopoverWindow)
+  
   // Clean up on close
   actionPopoverWindow.on('closed', () => { 
     actionPopoverWindow = null
@@ -187,6 +240,90 @@ async function createActionPopoverWindow(resultText: string, position: { x: numb
   
   logger.info('Action popover window created at:', pos)
   return actionPopoverWindow
+}
+
+// Helper function to set up blur handler for action popover that also hides main window
+function setupActionPopoverBlurHandler(popoverWindow: BrowserWindow) {
+  const CLICK_THROUGH_DEBOUNCE = 50 // Same as main window
+  
+  // Remove any existing blur handlers from window factory
+  popoverWindow.removeAllListeners('blur')
+  popoverWindow.removeAllListeners('focus')
+  
+  let popoverBlurTimeout: NodeJS.Timeout | null = null
+  
+  popoverWindow.on('blur', () => {
+    // Read state from window object (set by IPC handler)
+    const isIgnoringMouseEvents = (popoverWindow as any)?._isIgnoringMouseEvents || false
+    const lastIgnoreMouseEventsTime = (popoverWindow as any)?._lastIgnoreMouseEventsTime || 0
+    const timeSinceStateChange = Date.now() - lastIgnoreMouseEventsTime
+    
+    // Only ignore blur if click-through was just enabled (rapid mouse movement)
+    if (isIgnoringMouseEvents && timeSinceStateChange < CLICK_THROUGH_DEBOUNCE) {
+      logger.info('Action popover blur event ignored (rapid mouse movement)', {
+        isIgnoringMouseEvents,
+        timeSinceStateChange
+      })
+      return
+    }
+    
+    logger.info('Action popover blur event fired (treating as real blur/click)', {
+      isIgnoringMouseEvents,
+      timeSinceStateChange
+    })
+    
+    // Clear any existing timeout
+    if (popoverBlurTimeout) {
+      clearTimeout(popoverBlurTimeout)
+    }
+    
+    // Shorter timeout for immediate response to clicks
+    popoverBlurTimeout = setTimeout(() => {
+      // Double-check: only cancel if click-through was just enabled (rapid movement)
+      const currentIsIgnoring = (popoverWindow as any)?._isIgnoringMouseEvents || false
+      const currentLastTime = (popoverWindow as any)?._lastIgnoreMouseEventsTime || 0
+      const timeSinceChange = Date.now() - currentLastTime
+      
+      if (currentIsIgnoring && timeSinceChange < CLICK_THROUGH_DEBOUNCE) {
+        logger.info('Action popover blur timeout cancelled (rapid mouse movement)')
+        popoverBlurTimeout = null
+        return
+      }
+      
+      // Check if window regained focus
+      if (popoverWindow && !popoverWindow.isDestroyed() && popoverWindow.isFocused()) {
+        logger.info('Action popover blur timeout cancelled (window regained focus)')
+        popoverBlurTimeout = null
+        return
+      }
+      
+      logger.info('Action popover blur timeout executing - hiding both windows')
+      
+      // Hide popover
+      if (popoverWindow && !popoverWindow.isDestroyed()) {
+        logger.info('Hiding action popover window')
+        popoverWindow.hide()
+      }
+      
+      // Also hide main window
+      if (mainWindow && !mainWindow.isDestroyed()) {
+        logger.info('Hiding main window (from action popover blur)')
+        mainWindow.hide()
+      }
+      
+      popoverBlurTimeout = null
+    }, 100)
+  })
+  
+  // Cancel blur timeout if popover regains focus
+  popoverWindow.on('focus', () => {
+    logger.info('Action popover focus event fired')
+    if (popoverBlurTimeout) {
+      logger.info('Cancelling action popover blur timeout')
+      clearTimeout(popoverBlurTimeout)
+      popoverBlurTimeout = null
+    }
+  })
 }
 
 function createTray() {

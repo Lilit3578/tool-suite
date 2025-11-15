@@ -68,6 +68,41 @@ export default function CommandPalette() {
   const [popoverAnchor, setPopoverAnchor] = useState<HTMLElement | null>(null)
   
   const inputRef = useRef<HTMLInputElement | null>(null)
+  const actionRefs = useRef<Record<string, HTMLElement>>({})
+
+  // Handle mouse events to toggle click-through for transparent areas
+  useEffect(() => {
+    if (!open) return
+  
+    let lastIgnoreState: boolean | null = null
+  
+    const handleMouseMove = (e: MouseEvent) => {
+      const paletteWidth = 270
+      const isOverPalette = e.clientX <= paletteWidth
+      const isOverPopover = popoverOpen && e.clientX >= 280 && e.clientX <= 550
+      const shouldIgnore = !isOverPalette && !isOverPopover
+  
+      // Only update if state changed
+      if (shouldIgnore !== lastIgnoreState) {
+        console.log('Mouse at:', e.clientX, 'shouldIgnore:', shouldIgnore)
+        lastIgnoreState = shouldIgnore
+        
+        if (window.electronAPI?.setIgnoreMouseEvents) {
+          window.electronAPI.setIgnoreMouseEvents(shouldIgnore)
+        }
+      }
+    }
+  
+    window.addEventListener('mousemove', handleMouseMove)
+    
+    return () => {
+      window.removeEventListener('mousemove', handleMouseMove)
+      // Reset to interactive when unmounting
+      if (window.electronAPI?.setIgnoreMouseEvents) {
+        window.electronAPI.setIgnoreMouseEvents(false)
+      }
+    }
+  }, [open, popoverOpen])
 
   // Load widgets once
   useEffect(() => {
@@ -190,7 +225,16 @@ export default function CommandPalette() {
   }
 
   const suggestedItems = suggestions.slice(0, 4)
-  const actionItems = suggestions.filter((s) => s.type === "action")
+  const suggestedIds = new Set(suggestedItems.map(s => s.id))
+  
+  // Filter out items already shown in suggested
+  const actionItems = suggestions.filter((s) => 
+    s.type === "action" && !suggestedIds.has(s.id)
+  )
+  
+  const widgetItems = widgets.filter((w) => 
+    !suggestedIds.has(w.id)
+  )
 
   if (!open) return null
 
@@ -251,9 +295,12 @@ export default function CommandPalette() {
                     <Popover key={s.id} open={popoverOpen && selectedActionId === s.id}>
                       <PopoverTrigger asChild>
                         <CommandItem
+                          ref={(el) => {
+                            if (el) actionRefs.current[s.id] = el
+                          }}
                           value={s.id}
                           onSelect={(value) => {
-                            const element = document.querySelector(`[data-action-id="${s.id}"]`) as HTMLElement
+                            const element = actionRefs.current[s.id]
                             if (element) {
                               handleExecuteAction(s.id, element)
                             }
@@ -282,15 +329,15 @@ export default function CommandPalette() {
             </CommandGroup>
           )}
 
-          {(suggestedItems.length > 0 && widgets.length > 0) && (
+          {(suggestedItems.length > 0 && widgetItems.length > 0) && (
             <CommandSeparator />
           )}
 
           {/* ---- Widgets ---- */}
-          {widgets.length > 0 && (
+          {widgetItems.length > 0 && (
             <CommandGroup>
               <div cmdk-group-heading="">widgets</div>
-              {widgets.map((w) => (
+              {widgetItems.map((w) => (
                 <CommandItem
                   key={w.id}
                   onSelect={() => handleOpenWidget(w.id)}
@@ -303,7 +350,7 @@ export default function CommandPalette() {
             </CommandGroup>
           )}
 
-          {(widgets.length > 0 && actionItems.length > 0) && (
+          {(widgetItems.length > 0 && actionItems.length > 0) && (
             <CommandSeparator />
           )}
 
@@ -315,9 +362,12 @@ export default function CommandPalette() {
                 <Popover key={a.id} open={popoverOpen && selectedActionId === a.id}>
                   <PopoverTrigger asChild>
                     <CommandItem
+                      ref={(el) => {
+                        if (el) actionRefs.current[a.id] = el
+                      }}
                       value={a.id}
                       onSelect={(value) => {
-                        const element = document.querySelector(`[data-action-id="${a.id}"]`) as HTMLElement
+                        const element = actionRefs.current[a.id]
                         if (element) {
                           handleExecuteAction(a.id, element)
                         }

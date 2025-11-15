@@ -120,4 +120,31 @@ export function registerIpcHandlers(widgetManager: WidgetManager, callbacks?: Ma
 
   ipcMain.handle('get-preferences', () => settingsManager.getAll())
   ipcMain.handle('set-preferences', (_, prefs: any) => settingsManager.setAll(prefs))
+
+  // In ipc-handlers.ts
+  ipcMain.on('set-ignore-mouse-events', (event, ignore: boolean) => {
+    console.log('[IPC] set-ignore-mouse-events called with:', ignore)
+    const window = BrowserWindow.fromWebContents(event.sender)
+    if (window) {
+      console.log('[IPC] Setting ignore mouse events on window:', ignore)
+      const now = Date.now()
+      
+      // Store the state and timestamp for blur handler to check
+      ;(window as any)._isIgnoringMouseEvents = ignore
+      ;(window as any)._lastIgnoreMouseEventsTime = now
+      
+      // Track when click-through was last active (even after it's disabled)
+      // This helps us ignore delayed blur events that fire after click-through is disabled
+      if (ignore) {
+        // Click-through is being enabled - mark the time
+        ;(window as any)._lastClickThroughActiveTime = now
+      }
+      // When disabling, don't update _lastClickThroughActiveTime
+      // This way we can check how long ago click-through was active, even if it's now disabled
+      
+      window.setIgnoreMouseEvents(ignore, { forward: true })
+    } else {
+      console.log('[IPC] Window not found!')
+    }
+  })
 }

@@ -32730,6 +32730,32 @@ For more information, see https://radix-ui.com/primitives/docs/components/${titl
     const [popoverContent, setPopoverContent] = (0, import_react4.useState)("");
     const [popoverAnchor, setPopoverAnchor] = (0, import_react4.useState)(null);
     const inputRef = (0, import_react4.useRef)(null);
+    const actionRefs = (0, import_react4.useRef)({});
+    (0, import_react4.useEffect)(() => {
+      if (!open)
+        return;
+      let lastIgnoreState = null;
+      const handleMouseMove = (e) => {
+        const paletteWidth = 270;
+        const isOverPalette = e.clientX <= paletteWidth;
+        const isOverPopover = popoverOpen && e.clientX >= 280 && e.clientX <= 550;
+        const shouldIgnore = !isOverPalette && !isOverPopover;
+        if (shouldIgnore !== lastIgnoreState) {
+          console.log("Mouse at:", e.clientX, "shouldIgnore:", shouldIgnore);
+          lastIgnoreState = shouldIgnore;
+          if (window.electronAPI?.setIgnoreMouseEvents) {
+            window.electronAPI.setIgnoreMouseEvents(shouldIgnore);
+          }
+        }
+      };
+      window.addEventListener("mousemove", handleMouseMove);
+      return () => {
+        window.removeEventListener("mousemove", handleMouseMove);
+        if (window.electronAPI?.setIgnoreMouseEvents) {
+          window.electronAPI.setIgnoreMouseEvents(false);
+        }
+      };
+    }, [open, popoverOpen]);
     (0, import_react4.useEffect)(() => {
       async function loadWidgets() {
         const w = await window.electronAPI.getWidgets();
@@ -32834,7 +32860,13 @@ For more information, see https://radix-ui.com/primitives/docs/components/${titl
       }
     }
     const suggestedItems = suggestions.slice(0, 4);
-    const actionItems = suggestions.filter((s) => s.type === "action");
+    const suggestedIds = new Set(suggestedItems.map((s) => s.id));
+    const actionItems = suggestions.filter(
+      (s) => s.type === "action" && !suggestedIds.has(s.id)
+    );
+    const widgetItems = widgets.filter(
+      (w) => !suggestedIds.has(w.id)
+    );
     if (!open)
       return null;
     const isError = popoverContent?.startsWith("Error:");
@@ -32892,9 +32924,13 @@ For more information, see https://radix-ui.com/primitives/docs/components/${titl
                         /* @__PURE__ */ (0, import_jsx_runtime18.jsx)(PopoverTrigger2, { asChild: true, children: /* @__PURE__ */ (0, import_jsx_runtime18.jsxs)(
                           CommandItem,
                           {
+                            ref: (el) => {
+                              if (el)
+                                actionRefs.current[s.id] = el;
+                            },
                             value: s.id,
                             onSelect: (value) => {
-                              const element = document.querySelector(`[data-action-id="${s.id}"]`);
+                              const element = actionRefs.current[s.id];
                               if (element) {
                                 handleExecuteAction(s.id, element);
                               }
@@ -32921,10 +32957,10 @@ For more information, see https://radix-ui.com/primitives/docs/components/${titl
                     }
                   })
                 ] }),
-                suggestedItems.length > 0 && widgets.length > 0 && /* @__PURE__ */ (0, import_jsx_runtime18.jsx)(CommandSeparator, {}),
-                widgets.length > 0 && /* @__PURE__ */ (0, import_jsx_runtime18.jsxs)(CommandGroup, { children: [
+                suggestedItems.length > 0 && widgetItems.length > 0 && /* @__PURE__ */ (0, import_jsx_runtime18.jsx)(CommandSeparator, {}),
+                widgetItems.length > 0 && /* @__PURE__ */ (0, import_jsx_runtime18.jsxs)(CommandGroup, { children: [
                   /* @__PURE__ */ (0, import_jsx_runtime18.jsx)("div", { "cmdk-group-heading": "", children: "widgets" }),
-                  widgets.map((w) => /* @__PURE__ */ (0, import_jsx_runtime18.jsxs)(
+                  widgetItems.map((w) => /* @__PURE__ */ (0, import_jsx_runtime18.jsxs)(
                     CommandItem,
                     {
                       onSelect: () => handleOpenWidget(w.id),
@@ -32937,16 +32973,20 @@ For more information, see https://radix-ui.com/primitives/docs/components/${titl
                     w.id
                   ))
                 ] }),
-                widgets.length > 0 && actionItems.length > 0 && /* @__PURE__ */ (0, import_jsx_runtime18.jsx)(CommandSeparator, {}),
+                widgetItems.length > 0 && actionItems.length > 0 && /* @__PURE__ */ (0, import_jsx_runtime18.jsx)(CommandSeparator, {}),
                 actionItems.length > 0 && /* @__PURE__ */ (0, import_jsx_runtime18.jsxs)(CommandGroup, { children: [
                   /* @__PURE__ */ (0, import_jsx_runtime18.jsx)("div", { "cmdk-group-heading": "", children: "actions" }),
                   actionItems.map((a) => /* @__PURE__ */ (0, import_jsx_runtime18.jsxs)(Popover2, { open: popoverOpen && selectedActionId === a.id, children: [
                     /* @__PURE__ */ (0, import_jsx_runtime18.jsx)(PopoverTrigger2, { asChild: true, children: /* @__PURE__ */ (0, import_jsx_runtime18.jsxs)(
                       CommandItem,
                       {
+                        ref: (el) => {
+                          if (el)
+                            actionRefs.current[a.id] = el;
+                        },
                         value: a.id,
                         onSelect: (value) => {
-                          const element = document.querySelector(`[data-action-id="${a.id}"]`);
+                          const element = actionRefs.current[a.id];
                           if (element) {
                             handleExecuteAction(a.id, element);
                           }

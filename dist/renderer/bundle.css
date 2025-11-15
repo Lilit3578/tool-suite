@@ -909,9 +909,6 @@ label, button{
 .whitespace-nowrap{
   white-space: nowrap;
 }
-.whitespace-pre-wrap{
-  white-space: pre-wrap;
-}
 .rounded-2xl{
   border-radius: 1rem;
 }

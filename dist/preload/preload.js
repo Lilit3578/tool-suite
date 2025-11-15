@@ -11,6 +11,8 @@ import_electron.contextBridge.exposeInMainWorld("electronAPI", {
   setPreferences: (prefs) => import_electron.ipcRenderer.invoke("set-preferences", prefs),
   getCapturedText: () => import_electron.ipcRenderer.invoke("get-captured-text"),
   showActionPopover: (resultText, position) => import_electron.ipcRenderer.invoke("show-action-popover", resultText, position),
+  // Mouse events for click-through transparent areas
+  setIgnoreMouseEvents: (ignore) => import_electron.ipcRenderer.send("set-ignore-mouse-events", ignore),
   // Component rendering events
   onComponentInit: (cb) => import_electron.ipcRenderer.on("component-init", cb),
   // Legacy events for backward compatibility
