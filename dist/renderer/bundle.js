@@ -24436,10 +24436,10 @@
               return jsxWithValidation(type, props, key, false);
             }
           }
-          var jsx29 = jsxWithValidationDynamic;
+          var jsx28 = jsxWithValidationDynamic;
           var jsxs6 = jsxWithValidationStatic;
           exports.Fragment = REACT_FRAGMENT_TYPE;
-          exports.jsx = jsx29;
+          exports.jsx = jsx28;
           exports.jsxs = jsxs6;
         })();
       }
@@ -24465,7 +24465,7 @@
   var import_react6 = __toESM(require_react());
 
   // src/renderer/components/CommandPalette.tsx
-  var import_react3 = __toESM(require_react());
+  var import_react4 = __toESM(require_react());
 
   // src/renderer/components/ui/button.tsx
   var React3 = __toESM(require_react());
@@ -30068,472 +30068,14 @@ For more information, see https://radix-ui.com/primitives/docs/components/${titl
   };
   CommandShortcut.displayName = "CommandShortcut";
 
-  // src/renderer/components/CommandPalette.tsx
-  var import_jsx_runtime13 = __toESM(require_jsx_runtime());
-  var getIcon = (label, type) => {
-    const lower = label.toLowerCase();
-    if (lower.includes("clipboard"))
-      return /* @__PURE__ */ (0, import_jsx_runtime13.jsx)(Clipboard, { className: "w-4 h-4" });
-    if (lower.includes("color"))
-      return /* @__PURE__ */ (0, import_jsx_runtime13.jsx)(Pipette, { className: "w-4 h-4" });
-    if (lower.includes("translator"))
-      return /* @__PURE__ */ (0, import_jsx_runtime13.jsx)(Languages, { className: "w-4 h-4" });
-    if (lower.includes("dictionary"))
-      return /* @__PURE__ */ (0, import_jsx_runtime13.jsx)(BookOpen, { className: "w-4 h-4" });
-    if (lower.includes("counter"))
-      return /* @__PURE__ */ (0, import_jsx_runtime13.jsx)(MessageSquare, { className: "w-4 h-4" });
-    if (lower.includes("clock"))
-      return /* @__PURE__ */ (0, import_jsx_runtime13.jsx)(Globe, { className: "w-4 h-4" });
-    if (lower.includes("currency"))
-      return /* @__PURE__ */ (0, import_jsx_runtime13.jsx)(DollarSign, { className: "w-4 h-4" });
-    if (lower.includes("units"))
-      return /* @__PURE__ */ (0, import_jsx_runtime13.jsx)(Ruler, { className: "w-4 h-4" });
-    if (lower.includes("translate") || lower.includes("convert"))
-      return /* @__PURE__ */ (0, import_jsx_runtime13.jsx)(ArrowRight, { className: "w-4 h-4" });
-    return /* @__PURE__ */ (0, import_jsx_runtime13.jsx)(ArrowRight, { className: "w-4 h-4" });
-  };
-  function CommandPalette() {
-    const [open, setOpen] = (0, import_react3.useState)(false);
-    const [query, setQuery] = (0, import_react3.useState)("");
-    const [suggestions, setSuggestions] = (0, import_react3.useState)([]);
-    const [widgets, setWidgets] = (0, import_react3.useState)([]);
-    const [capturedText, setCapturedText] = (0, import_react3.useState)("");
-    const [selectedActionId, setSelectedActionId] = (0, import_react3.useState)(null);
-    const inputRef = (0, import_react3.useRef)(null);
-    const actionElementRefs = (0, import_react3.useRef)({});
-    (0, import_react3.useEffect)(() => {
-      async function loadWidgets() {
-        const w = await window.electronAPI.getWidgets();
-        setWidgets(w);
-      }
-      loadWidgets();
-    }, []);
-    (0, import_react3.useEffect)(() => {
-      const onShow = (_event, data) => {
-        setOpen(true);
-        setSelectedActionId(null);
-        if (data?.capturedText)
-          setCapturedText(data.capturedText);
-        else
-          window.electronAPI.getCapturedText().then(setCapturedText);
-      };
-      window.electronAPI.onPaletteOpened?.(onShow);
-    }, []);
-    (0, import_react3.useEffect)(() => {
-      let active = true;
-      const fetchSuggestions = async () => {
-        const res = await window.electronAPI.getSuggestions(query || "");
-        if (active)
-          setSuggestions(res);
-      };
-      fetchSuggestions();
-      return () => {
-        active = false;
-      };
-    }, [query]);
-    async function handleOpenWidget(widgetId) {
-      try {
-        const text = capturedText || await window.electronAPI.getCapturedText();
-        console.log("Opening widget:", widgetId, "with text:", text);
-        const res = await window.electronAPI.openWidget(widgetId, { selectedText: text });
-        console.log("Widget open result:", res);
-        if (res?.success !== false) {
-          setOpen(false);
-        } else {
-          console.error("Failed to open widget:", res);
-        }
-      } catch (error) {
-        console.error("Error opening widget:", error);
-      }
-    }
-    async function handleExecuteAction(actionId, element) {
-      console.log("=== handleExecuteAction START ===");
-      console.log("Action ID:", actionId);
-      console.log("Element:", element);
-      setSelectedActionId(actionId);
-      try {
-        if (!window.electronAPI) {
-          console.error("electronAPI not available");
-          return;
-        }
-        const text = capturedText || await window.electronAPI.getCapturedText();
-        console.log("Executing action:", actionId, "with text:", text);
-        const res = await window.electronAPI.executeAction(actionId, text);
-        console.log("Action result:", res);
-        let resultText = "";
-        if (res && typeof res === "object" && res.success === true) {
-          if (res.result?.translatedText) {
-            resultText = res.result.translatedText;
-          } else if (typeof res.result === "string") {
-            resultText = res.result;
-          } else if (res.result) {
-            resultText = JSON.stringify(res.result);
-          } else {
-            resultText = "Action completed";
-          }
-        } else if (res && typeof res === "object" && res.success === false) {
-          const errorMsg = res.error || "Unknown error";
-          resultText = `Error: ${errorMsg}`;
-        } else {
-          resultText = typeof res === "string" ? res : `Error: ${JSON.stringify(res)}`;
-        }
-        console.log("Final resultText:", resultText);
-        let position = { x: 270 + 10, y: 100 };
-        let targetElement = element || actionElementRefs.current[actionId];
-        if (targetElement) {
-          const commandElement = targetElement.closest("[cmdk-root]");
-          const commandRect = commandElement?.getBoundingClientRect();
-          const rect = targetElement.getBoundingClientRect();
-          console.log("=== POSITION DEBUG ===");
-          console.log("Element rect:", {
-            top: rect.top,
-            left: rect.left,
-            right: rect.right,
-            bottom: rect.bottom,
-            width: rect.width,
-            height: rect.height
-          });
-          console.log("Command (palette) rect:", commandRect);
-          console.log("Window innerHeight:", window.innerHeight);
-          console.log("Window innerWidth:", window.innerWidth);
-          if (rect.width > 0 && rect.height > 0) {
-            const x = 270 + 10;
-            let y = rect.top;
-            if (commandRect) {
-              y = rect.top - commandRect.top + 40;
-            }
-            y = y + rect.height / 2 - 40;
-            position = {
-              x: Math.round(x),
-              y: Math.round(y)
-            };
-            console.log("Calculated position:", position);
-          } else {
-            console.warn("Element has zero dimensions, using fallback");
-          }
-        } else {
-          console.warn("No element found, using fallback position");
-        }
-        console.log("Final position being sent:", position);
-        const popoverResult = await window.electronAPI.showActionPopover(resultText, position);
-        console.log("showActionPopover result:", popoverResult);
-        console.log("=== handleExecuteAction END ===");
-      } catch (error) {
-        console.error("=== ERROR in handleExecuteAction ===");
-        console.error("Error:", error);
-        const errorText = `Error: ${String(error)}`;
-        if (window.electronAPI) {
-          try {
-            await window.electronAPI.showActionPopover(errorText, { x: 280, y: 100 });
-          } catch (popoverError) {
-            console.error("Failed to show error popover:", popoverError);
-          }
-        }
-        console.log("=== ERROR HANDLING END ===");
-      }
-    }
-    const suggestedItems = suggestions.slice(0, 4);
-    const actionItems = suggestions.filter((s) => s.type === "action");
-    if (!open)
-      return null;
-    return /* @__PURE__ */ (0, import_jsx_runtime13.jsxs)(Command, { className: "h-[328px]", children: [
-      /* @__PURE__ */ (0, import_jsx_runtime13.jsx)(
-        CommandInput,
-        {
-          ref: inputRef,
-          placeholder: "search...",
-          value: query,
-          onValueChange: setQuery,
-          autoFocus: true
-        }
-      ),
-      /* @__PURE__ */ (0, import_jsx_runtime13.jsxs)(CommandList, { children: [
-        /* @__PURE__ */ (0, import_jsx_runtime13.jsx)(CommandEmpty, { children: /* @__PURE__ */ (0, import_jsx_runtime13.jsx)(Button, { variant: "link", children: "request widget" }) }),
-        suggestedItems.length > 0 && /* @__PURE__ */ (0, import_jsx_runtime13.jsxs)(CommandGroup, { children: [
-          /* @__PURE__ */ (0, import_jsx_runtime13.jsx)("div", { "cmdk-group-heading": "", children: "suggested" }),
-          suggestedItems.map((s) => {
-            if (s.type === "widget") {
-              return /* @__PURE__ */ (0, import_jsx_runtime13.jsxs)(
-                CommandItem,
-                {
-                  onSelect: () => handleOpenWidget(s.id),
-                  className: "cursor-pointer",
-                  children: [
-                    getIcon(s.label, s.type),
-                    /* @__PURE__ */ (0, import_jsx_runtime13.jsx)("span", { children: s.label })
-                  ]
-                },
-                s.id
-              );
-            } else {
-              return /* @__PURE__ */ (0, import_jsx_runtime13.jsxs)(
-                CommandItem,
-                {
-                  value: s.id,
-                  ref: (el) => {
-                    if (el) {
-                      actionElementRefs.current[s.id] = el;
-                    }
-                  },
-                  onSelect: async (value) => {
-                    console.log("CommandItem onSelect fired for suggested action:", value);
-                    setTimeout(() => {
-                      const element = actionElementRefs.current[s.id];
-                      console.log("Element from ref for suggested action:", element);
-                      if (element) {
-                        handleExecuteAction(s.id, element);
-                      } else {
-                        console.warn("Element ref not found, executing without element");
-                        handleExecuteAction(s.id);
-                      }
-                    }, 0);
-                  },
-                  className: `cursor-pointer ${selectedActionId === s.id ? "bg-ink-200" : ""}`,
-                  "data-selected": selectedActionId === s.id,
-                  children: [
-                    /* @__PURE__ */ (0, import_jsx_runtime13.jsx)(CornerDownRight, {}),
-                    /* @__PURE__ */ (0, import_jsx_runtime13.jsx)("span", { children: s.label })
-                  ]
-                },
-                s.id
-              );
-            }
-          })
-        ] }),
-        suggestedItems.length > 0 && widgets.length > 0 && /* @__PURE__ */ (0, import_jsx_runtime13.jsx)(CommandSeparator, {}),
-        widgets.length > 0 && /* @__PURE__ */ (0, import_jsx_runtime13.jsxs)(CommandGroup, { children: [
-          /* @__PURE__ */ (0, import_jsx_runtime13.jsx)("div", { "cmdk-group-heading": "", children: "widgets" }),
-          widgets.map((w) => /* @__PURE__ */ (0, import_jsx_runtime13.jsxs)(
-            CommandItem,
-            {
-              onSelect: () => handleOpenWidget(w.id),
-              className: "cursor-pointer",
-              children: [
-                getIcon(w.label, "widget"),
-                /* @__PURE__ */ (0, import_jsx_runtime13.jsx)("span", { children: w.label })
-              ]
-            },
-            w.id
-          ))
-        ] }),
-        widgets.length > 0 && actionItems.length > 0 && /* @__PURE__ */ (0, import_jsx_runtime13.jsx)(CommandSeparator, {}),
-        actionItems.length > 0 && /* @__PURE__ */ (0, import_jsx_runtime13.jsxs)(CommandGroup, { children: [
-          /* @__PURE__ */ (0, import_jsx_runtime13.jsx)("div", { "cmdk-group-heading": "", children: "actions" }),
-          actionItems.map((a) => /* @__PURE__ */ (0, import_jsx_runtime13.jsxs)(
-            CommandItem,
-            {
-              value: a.id,
-              ref: (el) => {
-                if (el) {
-                  actionElementRefs.current[a.id] = el;
-                }
-              },
-              onSelect: async (value) => {
-                console.log("CommandItem onSelect fired for action:", value);
-                setTimeout(() => {
-                  const element = actionElementRefs.current[a.id];
-                  console.log("Element from ref for action:", element);
-                  if (element) {
-                    handleExecuteAction(a.id, element);
-                  } else {
-                    console.warn("Element ref not found, executing without element");
-                    handleExecuteAction(a.id);
-                  }
-                }, 0);
-              },
-              className: `cursor-pointer ${selectedActionId === a.id ? "bg-ink-200" : ""}`,
-              "data-selected": selectedActionId === a.id,
-              children: [
-                /* @__PURE__ */ (0, import_jsx_runtime13.jsx)(CornerDownRight, {}),
-                /* @__PURE__ */ (0, import_jsx_runtime13.jsx)("span", { children: a.label })
-              ]
-            },
-            a.id
-          ))
-        ] }),
-        /* @__PURE__ */ (0, import_jsx_runtime13.jsx)(CommandItem, { className: "text-ink-700 border-t font-serif rounded-none text-lg italic", children: "by nullab" })
-      ] })
-    ] });
-  }
-
-  // src/renderer/components/TranslatorWidget.tsx
-  var import_react5 = __toESM(require_react());
-
-  // src/renderer/components/ui/card.tsx
-  var React31 = __toESM(require_react());
-  var import_jsx_runtime14 = __toESM(require_jsx_runtime());
-  var Card = React31.forwardRef(({ className, ...props }, ref) => /* @__PURE__ */ (0, import_jsx_runtime14.jsx)(
-    "div",
-    {
-      ref,
-      className: cn(
-        "rounded-lg border bg-card text-card-foreground shadow-sm",
-        className
-      ),
-      ...props
-    }
-  ));
-  Card.displayName = "Card";
-  var CardHeader = React31.forwardRef(({ className, ...props }, ref) => /* @__PURE__ */ (0, import_jsx_runtime14.jsx)(
-    "div",
-    {
-      ref,
-      className: cn("flex flex-col space-y-1.5 p-6", className),
-      ...props
-    }
-  ));
-  CardHeader.displayName = "CardHeader";
-  var CardTitle = React31.forwardRef(({ className, ...props }, ref) => /* @__PURE__ */ (0, import_jsx_runtime14.jsx)(
-    "div",
-    {
-      ref,
-      className: cn(
-        "text-2xl font-semibold leading-none tracking-tight",
-        className
-      ),
-      ...props
-    }
-  ));
-  CardTitle.displayName = "CardTitle";
-  var CardDescription = React31.forwardRef(({ className, ...props }, ref) => /* @__PURE__ */ (0, import_jsx_runtime14.jsx)(
-    "div",
-    {
-      ref,
-      className: cn("text-sm text-muted-foreground", className),
-      ...props
-    }
-  ));
-  CardDescription.displayName = "CardDescription";
-  var CardContent = React31.forwardRef(({ className, ...props }, ref) => /* @__PURE__ */ (0, import_jsx_runtime14.jsx)("div", { ref, className: cn("p-6 pt-0", className), ...props }));
-  CardContent.displayName = "CardContent";
-  var CardFooter = React31.forwardRef(({ className, ...props }, ref) => /* @__PURE__ */ (0, import_jsx_runtime14.jsx)(
-    "div",
-    {
-      ref,
-      className: cn("flex items-center p-6 pt-0", className),
-      ...props
-    }
-  ));
-  CardFooter.displayName = "CardFooter";
-
-  // src/renderer/components/ui/separator.tsx
-  var React34 = __toESM(require_react());
-
-  // node_modules/@radix-ui/react-separator/dist/index.mjs
-  var React33 = __toESM(require_react(), 1);
-
-  // node_modules/@radix-ui/react-separator/node_modules/@radix-ui/react-primitive/dist/index.mjs
-  var React32 = __toESM(require_react(), 1);
-  var ReactDOM3 = __toESM(require_react_dom(), 1);
-  var import_jsx_runtime15 = __toESM(require_jsx_runtime(), 1);
-  var NODES2 = [
-    "a",
-    "button",
-    "div",
-    "form",
-    "h2",
-    "h3",
-    "img",
-    "input",
-    "label",
-    "li",
-    "nav",
-    "ol",
-    "p",
-    "select",
-    "span",
-    "svg",
-    "ul"
-  ];
-  var Primitive2 = NODES2.reduce((primitive, node) => {
-    const Slot4 = createSlot(`Primitive.${node}`);
-    const Node2 = React32.forwardRef((props, forwardedRef) => {
-      const { asChild, ...primitiveProps } = props;
-      const Comp = asChild ? Slot4 : node;
-      if (typeof window !== "undefined") {
-        window[Symbol.for("radix-ui")] = true;
-      }
-      return /* @__PURE__ */ (0, import_jsx_runtime15.jsx)(Comp, { ...primitiveProps, ref: forwardedRef });
-    });
-    Node2.displayName = `Primitive.${node}`;
-    return { ...primitive, [node]: Node2 };
-  }, {});
-
-  // node_modules/@radix-ui/react-separator/dist/index.mjs
-  var import_jsx_runtime16 = __toESM(require_jsx_runtime(), 1);
-  var NAME = "Separator";
-  var DEFAULT_ORIENTATION = "horizontal";
-  var ORIENTATIONS = ["horizontal", "vertical"];
-  var Separator = React33.forwardRef((props, forwardedRef) => {
-    const { decorative, orientation: orientationProp = DEFAULT_ORIENTATION, ...domProps } = props;
-    const orientation = isValidOrientation(orientationProp) ? orientationProp : DEFAULT_ORIENTATION;
-    const ariaOrientation = orientation === "vertical" ? orientation : void 0;
-    const semanticProps = decorative ? { role: "none" } : { "aria-orientation": ariaOrientation, role: "separator" };
-    return /* @__PURE__ */ (0, import_jsx_runtime16.jsx)(
-      Primitive2.div,
-      {
-        "data-orientation": orientation,
-        ...semanticProps,
-        ...domProps,
-        ref: forwardedRef
-      }
-    );
-  });
-  Separator.displayName = NAME;
-  function isValidOrientation(orientation) {
-    return ORIENTATIONS.includes(orientation);
-  }
-  var Root2 = Separator;
-
-  // src/renderer/components/ui/separator.tsx
-  var import_jsx_runtime17 = __toESM(require_jsx_runtime());
-  var Separator2 = React34.forwardRef(
-    ({ className, orientation = "horizontal", decorative = true, ...props }, ref) => /* @__PURE__ */ (0, import_jsx_runtime17.jsx)(
-      Root2,
-      {
-        ref,
-        decorative,
-        orientation,
-        className: cn(
-          "shrink-0 bg-border",
-          orientation === "horizontal" ? "h-[1px] w-full" : "h-full w-[1px]",
-          className
-        ),
-        ...props
-      }
-    )
-  );
-  Separator2.displayName = Root2.displayName;
-
-  // src/renderer/components/ui/textarea.tsx
-  var React35 = __toESM(require_react());
-  var import_jsx_runtime18 = __toESM(require_jsx_runtime());
-  var Textarea = React35.forwardRef(({ className, ...props }, ref) => {
-    return /* @__PURE__ */ (0, import_jsx_runtime18.jsx)(
-      "textarea",
-      {
-        className: cn(
-          "flex min-h-[80px] w-full rounded-md border border-input bg-background px-3 py-2 text-base ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 md:text-sm",
-          className
-        ),
-        ref,
-        ...props
-      }
-    );
-  });
-  Textarea.displayName = "Textarea";
-
-  // src/renderer/components/ui/combobox.tsx
-  var React43 = __toESM(require_react());
-
   // src/renderer/components/ui/popover.tsx
-  var React42 = __toESM(require_react());
+  var React36 = __toESM(require_react());
 
   // node_modules/@radix-ui/react-popover/dist/index.mjs
-  var React41 = __toESM(require_react(), 1);
+  var React35 = __toESM(require_react(), 1);
 
   // node_modules/@radix-ui/react-popper/dist/index.mjs
-  var React39 = __toESM(require_react(), 1);
+  var React33 = __toESM(require_react(), 1);
 
   // node_modules/@floating-ui/utils/dist/floating-ui.utils.mjs
   var sides = ["top", "right", "bottom", "left"];
@@ -32144,13 +31686,13 @@ For more information, see https://radix-ui.com/primitives/docs/components/${titl
   };
 
   // node_modules/@floating-ui/react-dom/dist/floating-ui.react-dom.mjs
-  var React36 = __toESM(require_react(), 1);
-  var import_react4 = __toESM(require_react(), 1);
-  var ReactDOM4 = __toESM(require_react_dom(), 1);
+  var React30 = __toESM(require_react(), 1);
+  var import_react3 = __toESM(require_react(), 1);
+  var ReactDOM3 = __toESM(require_react_dom(), 1);
   var isClient = typeof document !== "undefined";
   var noop = function noop2() {
   };
-  var index = isClient ? import_react4.useLayoutEffect : noop;
+  var index = isClient ? import_react3.useLayoutEffect : noop;
   function deepEqual(a, b) {
     if (a === b) {
       return true;
@@ -32211,7 +31753,7 @@ For more information, see https://radix-ui.com/primitives/docs/components/${titl
     return Math.round(value * dpr) / dpr;
   }
   function useLatestRef(value) {
-    const ref = React36.useRef(value);
+    const ref = React30.useRef(value);
     index(() => {
       ref.current = value;
     });
@@ -32234,7 +31776,7 @@ For more information, see https://radix-ui.com/primitives/docs/components/${titl
       whileElementsMounted,
       open
     } = options;
-    const [data, setData] = React36.useState({
+    const [data, setData] = React30.useState({
       x: 0,
       y: 0,
       strategy,
@@ -32242,19 +31784,19 @@ For more information, see https://radix-ui.com/primitives/docs/components/${titl
       middlewareData: {},
       isPositioned: false
     });
-    const [latestMiddleware, setLatestMiddleware] = React36.useState(middleware);
+    const [latestMiddleware, setLatestMiddleware] = React30.useState(middleware);
     if (!deepEqual(latestMiddleware, middleware)) {
       setLatestMiddleware(middleware);
     }
-    const [_reference, _setReference] = React36.useState(null);
-    const [_floating, _setFloating] = React36.useState(null);
-    const setReference = React36.useCallback((node) => {
+    const [_reference, _setReference] = React30.useState(null);
+    const [_floating, _setFloating] = React30.useState(null);
+    const setReference = React30.useCallback((node) => {
       if (node !== referenceRef.current) {
         referenceRef.current = node;
         _setReference(node);
       }
     }, []);
-    const setFloating = React36.useCallback((node) => {
+    const setFloating = React30.useCallback((node) => {
       if (node !== floatingRef.current) {
         floatingRef.current = node;
         _setFloating(node);
@@ -32262,14 +31804,14 @@ For more information, see https://radix-ui.com/primitives/docs/components/${titl
     }, []);
     const referenceEl = externalReference || _reference;
     const floatingEl = externalFloating || _floating;
-    const referenceRef = React36.useRef(null);
-    const floatingRef = React36.useRef(null);
-    const dataRef = React36.useRef(data);
+    const referenceRef = React30.useRef(null);
+    const floatingRef = React30.useRef(null);
+    const dataRef = React30.useRef(data);
     const hasWhileElementsMounted = whileElementsMounted != null;
     const whileElementsMountedRef = useLatestRef(whileElementsMounted);
     const platformRef = useLatestRef(platform2);
     const openRef = useLatestRef(open);
-    const update = React36.useCallback(() => {
+    const update = React30.useCallback(() => {
       if (!referenceRef.current || !floatingRef.current) {
         return;
       }
@@ -32292,7 +31834,7 @@ For more information, see https://radix-ui.com/primitives/docs/components/${titl
         };
         if (isMountedRef.current && !deepEqual(dataRef.current, fullData)) {
           dataRef.current = fullData;
-          ReactDOM4.flushSync(() => {
+          ReactDOM3.flushSync(() => {
             setData(fullData);
           });
         }
@@ -32307,7 +31849,7 @@ For more information, see https://radix-ui.com/primitives/docs/components/${titl
         }));
       }
     }, [open]);
-    const isMountedRef = React36.useRef(false);
+    const isMountedRef = React30.useRef(false);
     index(() => {
       isMountedRef.current = true;
       return () => {
@@ -32326,17 +31868,17 @@ For more information, see https://radix-ui.com/primitives/docs/components/${titl
         update();
       }
     }, [referenceEl, floatingEl, update, whileElementsMountedRef, hasWhileElementsMounted]);
-    const refs = React36.useMemo(() => ({
+    const refs = React30.useMemo(() => ({
       reference: referenceRef,
       floating: floatingRef,
       setReference,
       setFloating
     }), [setReference, setFloating]);
-    const elements = React36.useMemo(() => ({
+    const elements = React30.useMemo(() => ({
       reference: referenceEl,
       floating: floatingEl
     }), [referenceEl, floatingEl]);
-    const floatingStyles = React36.useMemo(() => {
+    const floatingStyles = React30.useMemo(() => {
       const initialStyles = {
         position: strategy,
         left: 0,
@@ -32362,7 +31904,7 @@ For more information, see https://radix-ui.com/primitives/docs/components/${titl
         top: y
       };
     }, [strategy, transform, elements.floating, data.x, data.y]);
-    return React36.useMemo(() => ({
+    return React30.useMemo(() => ({
       ...data,
       update,
       refs,
@@ -32431,12 +31973,12 @@ For more information, see https://radix-ui.com/primitives/docs/components/${titl
   });
 
   // node_modules/@radix-ui/react-arrow/dist/index.mjs
-  var React37 = __toESM(require_react(), 1);
-  var import_jsx_runtime19 = __toESM(require_jsx_runtime(), 1);
-  var NAME2 = "Arrow";
-  var Arrow = React37.forwardRef((props, forwardedRef) => {
+  var React31 = __toESM(require_react(), 1);
+  var import_jsx_runtime13 = __toESM(require_jsx_runtime(), 1);
+  var NAME = "Arrow";
+  var Arrow = React31.forwardRef((props, forwardedRef) => {
     const { children, width = 10, height = 5, ...arrowProps } = props;
-    return /* @__PURE__ */ (0, import_jsx_runtime19.jsx)(
+    return /* @__PURE__ */ (0, import_jsx_runtime13.jsx)(
       Primitive.svg,
       {
         ...arrowProps,
@@ -32445,17 +31987,17 @@ For more information, see https://radix-ui.com/primitives/docs/components/${titl
         height,
         viewBox: "0 0 30 10",
         preserveAspectRatio: "none",
-        children: props.asChild ? children : /* @__PURE__ */ (0, import_jsx_runtime19.jsx)("polygon", { points: "0,0 30,0 15,10" })
+        children: props.asChild ? children : /* @__PURE__ */ (0, import_jsx_runtime13.jsx)("polygon", { points: "0,0 30,0 15,10" })
       }
     );
   });
-  Arrow.displayName = NAME2;
-  var Root3 = Arrow;
+  Arrow.displayName = NAME;
+  var Root2 = Arrow;
 
   // node_modules/@radix-ui/react-use-size/dist/index.mjs
-  var React38 = __toESM(require_react(), 1);
+  var React32 = __toESM(require_react(), 1);
   function useSize(element) {
-    const [size4, setSize] = React38.useState(void 0);
+    const [size4, setSize] = React32.useState(void 0);
     useLayoutEffect2(() => {
       if (element) {
         setSize({ width: element.offsetWidth, height: element.offsetHeight });
@@ -32490,38 +32032,38 @@ For more information, see https://radix-ui.com/primitives/docs/components/${titl
   }
 
   // node_modules/@radix-ui/react-popper/dist/index.mjs
-  var import_jsx_runtime20 = __toESM(require_jsx_runtime(), 1);
+  var import_jsx_runtime14 = __toESM(require_jsx_runtime(), 1);
   var POPPER_NAME = "Popper";
   var [createPopperContext, createPopperScope] = createContextScope(POPPER_NAME);
   var [PopperProvider, usePopperContext] = createPopperContext(POPPER_NAME);
   var Popper = (props) => {
     const { __scopePopper, children } = props;
-    const [anchor, setAnchor] = React39.useState(null);
-    return /* @__PURE__ */ (0, import_jsx_runtime20.jsx)(PopperProvider, { scope: __scopePopper, anchor, onAnchorChange: setAnchor, children });
+    const [anchor, setAnchor] = React33.useState(null);
+    return /* @__PURE__ */ (0, import_jsx_runtime14.jsx)(PopperProvider, { scope: __scopePopper, anchor, onAnchorChange: setAnchor, children });
   };
   Popper.displayName = POPPER_NAME;
   var ANCHOR_NAME = "PopperAnchor";
-  var PopperAnchor = React39.forwardRef(
+  var PopperAnchor = React33.forwardRef(
     (props, forwardedRef) => {
       const { __scopePopper, virtualRef, ...anchorProps } = props;
       const context = usePopperContext(ANCHOR_NAME, __scopePopper);
-      const ref = React39.useRef(null);
+      const ref = React33.useRef(null);
       const composedRefs = useComposedRefs(forwardedRef, ref);
-      const anchorRef = React39.useRef(null);
-      React39.useEffect(() => {
+      const anchorRef = React33.useRef(null);
+      React33.useEffect(() => {
         const previousAnchor = anchorRef.current;
         anchorRef.current = virtualRef?.current || ref.current;
         if (previousAnchor !== anchorRef.current) {
           context.onAnchorChange(anchorRef.current);
         }
       });
-      return virtualRef ? null : /* @__PURE__ */ (0, import_jsx_runtime20.jsx)(Primitive.div, { ...anchorProps, ref: composedRefs });
+      return virtualRef ? null : /* @__PURE__ */ (0, import_jsx_runtime14.jsx)(Primitive.div, { ...anchorProps, ref: composedRefs });
     }
   );
   PopperAnchor.displayName = ANCHOR_NAME;
   var CONTENT_NAME2 = "PopperContent";
   var [PopperContentProvider, useContentContext] = createPopperContext(CONTENT_NAME2);
-  var PopperContent = React39.forwardRef(
+  var PopperContent = React33.forwardRef(
     (props, forwardedRef) => {
       const {
         __scopePopper,
@@ -32540,9 +32082,9 @@ For more information, see https://radix-ui.com/primitives/docs/components/${titl
         ...contentProps
       } = props;
       const context = usePopperContext(CONTENT_NAME2, __scopePopper);
-      const [content, setContent] = React39.useState(null);
+      const [content, setContent] = React33.useState(null);
       const composedRefs = useComposedRefs(forwardedRef, (node) => setContent(node));
-      const [arrow4, setArrow] = React39.useState(null);
+      const [arrow4, setArrow] = React33.useState(null);
       const arrowSize = useSize(arrow4);
       const arrowWidth = arrowSize?.width ?? 0;
       const arrowHeight = arrowSize?.height ?? 0;
@@ -32604,12 +32146,12 @@ For more information, see https://radix-ui.com/primitives/docs/components/${titl
       const arrowX = middlewareData.arrow?.x;
       const arrowY = middlewareData.arrow?.y;
       const cannotCenterArrow = middlewareData.arrow?.centerOffset !== 0;
-      const [contentZIndex, setContentZIndex] = React39.useState();
+      const [contentZIndex, setContentZIndex] = React33.useState();
       useLayoutEffect2(() => {
         if (content)
           setContentZIndex(window.getComputedStyle(content).zIndex);
       }, [content]);
-      return /* @__PURE__ */ (0, import_jsx_runtime20.jsx)(
+      return /* @__PURE__ */ (0, import_jsx_runtime14.jsx)(
         "div",
         {
           ref: refs.setFloating,
@@ -32633,7 +32175,7 @@ For more information, see https://radix-ui.com/primitives/docs/components/${titl
             }
           },
           dir: props.dir,
-          children: /* @__PURE__ */ (0, import_jsx_runtime20.jsx)(
+          children: /* @__PURE__ */ (0, import_jsx_runtime14.jsx)(
             PopperContentProvider,
             {
               scope: __scopePopper,
@@ -32642,7 +32184,7 @@ For more information, see https://radix-ui.com/primitives/docs/components/${titl
               arrowX,
               arrowY,
               shouldHideArrow: cannotCenterArrow,
-              children: /* @__PURE__ */ (0, import_jsx_runtime20.jsx)(
+              children: /* @__PURE__ */ (0, import_jsx_runtime14.jsx)(
                 Primitive.div,
                 {
                   "data-side": placedSide,
@@ -32671,7 +32213,7 @@ For more information, see https://radix-ui.com/primitives/docs/components/${titl
     bottom: "top",
     left: "right"
   };
-  var PopperArrow = React39.forwardRef(function PopperArrow2(props, forwardedRef) {
+  var PopperArrow = React33.forwardRef(function PopperArrow2(props, forwardedRef) {
     const { __scopePopper, ...arrowProps } = props;
     const contentContext = useContentContext(ARROW_NAME, __scopePopper);
     const baseSide = OPPOSITE_SIDE[contentContext.placedSide];
@@ -32679,7 +32221,7 @@ For more information, see https://radix-ui.com/primitives/docs/components/${titl
       // we have to use an extra wrapper because `ResizeObserver` (used by `useSize`)
       // doesn't report size as we'd expect on SVG elements.
       // it reports their bounding box which is effectively the largest path inside the SVG.
-      /* @__PURE__ */ (0, import_jsx_runtime20.jsx)(
+      /* @__PURE__ */ (0, import_jsx_runtime14.jsx)(
         "span",
         {
           ref: contentContext.onArrowChange,
@@ -32702,8 +32244,8 @@ For more information, see https://radix-ui.com/primitives/docs/components/${titl
             }[contentContext.placedSide],
             visibility: contentContext.shouldHideArrow ? "hidden" : void 0
           },
-          children: /* @__PURE__ */ (0, import_jsx_runtime20.jsx)(
-            Root3,
+          children: /* @__PURE__ */ (0, import_jsx_runtime14.jsx)(
+            Root2,
             {
               ...arrowProps,
               ref: forwardedRef,
@@ -32763,53 +32305,53 @@ For more information, see https://radix-ui.com/primitives/docs/components/${titl
   var Arrow2 = PopperArrow;
 
   // node_modules/@radix-ui/react-popover/node_modules/@radix-ui/react-slot/dist/index.mjs
-  var React40 = __toESM(require_react(), 1);
-  var import_jsx_runtime21 = __toESM(require_jsx_runtime(), 1);
+  var React34 = __toESM(require_react(), 1);
+  var import_jsx_runtime15 = __toESM(require_jsx_runtime(), 1);
   // @__NO_SIDE_EFFECTS__
   function createSlot4(ownerName) {
     const SlotClone = /* @__PURE__ */ createSlotClone4(ownerName);
-    const Slot22 = React40.forwardRef((props, forwardedRef) => {
+    const Slot22 = React34.forwardRef((props, forwardedRef) => {
       const { children, ...slotProps } = props;
-      const childrenArray = React40.Children.toArray(children);
+      const childrenArray = React34.Children.toArray(children);
       const slottable = childrenArray.find(isSlottable4);
       if (slottable) {
         const newElement = slottable.props.children;
         const newChildren = childrenArray.map((child) => {
           if (child === slottable) {
-            if (React40.Children.count(newElement) > 1)
-              return React40.Children.only(null);
-            return React40.isValidElement(newElement) ? newElement.props.children : null;
+            if (React34.Children.count(newElement) > 1)
+              return React34.Children.only(null);
+            return React34.isValidElement(newElement) ? newElement.props.children : null;
           } else {
             return child;
           }
         });
-        return /* @__PURE__ */ (0, import_jsx_runtime21.jsx)(SlotClone, { ...slotProps, ref: forwardedRef, children: React40.isValidElement(newElement) ? React40.cloneElement(newElement, void 0, newChildren) : null });
+        return /* @__PURE__ */ (0, import_jsx_runtime15.jsx)(SlotClone, { ...slotProps, ref: forwardedRef, children: React34.isValidElement(newElement) ? React34.cloneElement(newElement, void 0, newChildren) : null });
       }
-      return /* @__PURE__ */ (0, import_jsx_runtime21.jsx)(SlotClone, { ...slotProps, ref: forwardedRef, children });
+      return /* @__PURE__ */ (0, import_jsx_runtime15.jsx)(SlotClone, { ...slotProps, ref: forwardedRef, children });
     });
     Slot22.displayName = `${ownerName}.Slot`;
     return Slot22;
   }
   // @__NO_SIDE_EFFECTS__
   function createSlotClone4(ownerName) {
-    const SlotClone = React40.forwardRef((props, forwardedRef) => {
+    const SlotClone = React34.forwardRef((props, forwardedRef) => {
       const { children, ...slotProps } = props;
-      if (React40.isValidElement(children)) {
+      if (React34.isValidElement(children)) {
         const childrenRef = getElementRef5(children);
         const props2 = mergeProps4(slotProps, children.props);
-        if (children.type !== React40.Fragment) {
+        if (children.type !== React34.Fragment) {
           props2.ref = forwardedRef ? composeRefs(forwardedRef, childrenRef) : childrenRef;
         }
-        return React40.cloneElement(children, props2);
+        return React34.cloneElement(children, props2);
       }
-      return React40.Children.count(children) > 1 ? React40.Children.only(null) : null;
+      return React34.Children.count(children) > 1 ? React34.Children.only(null) : null;
     });
     SlotClone.displayName = `${ownerName}.SlotClone`;
     return SlotClone;
   }
   var SLOTTABLE_IDENTIFIER4 = Symbol("radix.slottable");
   function isSlottable4(child) {
-    return React40.isValidElement(child) && typeof child.type === "function" && "__radixId" in child.type && child.type.__radixId === SLOTTABLE_IDENTIFIER4;
+    return React34.isValidElement(child) && typeof child.type === "function" && "__radixId" in child.type && child.type.__radixId === SLOTTABLE_IDENTIFIER4;
   }
   function mergeProps4(slotProps, childProps) {
     const overrideProps = { ...childProps };
@@ -32850,7 +32392,7 @@ For more information, see https://radix-ui.com/primitives/docs/components/${titl
   }
 
   // node_modules/@radix-ui/react-popover/dist/index.mjs
-  var import_jsx_runtime22 = __toESM(require_jsx_runtime(), 1);
+  var import_jsx_runtime16 = __toESM(require_jsx_runtime(), 1);
   var POPOVER_NAME = "Popover";
   var [createPopoverContext, createPopoverScope] = createContextScope(POPOVER_NAME, [
     createPopperScope
@@ -32867,15 +32409,15 @@ For more information, see https://radix-ui.com/primitives/docs/components/${titl
       modal = false
     } = props;
     const popperScope = usePopperScope(__scopePopover);
-    const triggerRef = React41.useRef(null);
-    const [hasCustomAnchor, setHasCustomAnchor] = React41.useState(false);
+    const triggerRef = React35.useRef(null);
+    const [hasCustomAnchor, setHasCustomAnchor] = React35.useState(false);
     const [open, setOpen] = useControllableState({
       prop: openProp,
       defaultProp: defaultOpen ?? false,
       onChange: onOpenChange,
       caller: POPOVER_NAME
     });
-    return /* @__PURE__ */ (0, import_jsx_runtime22.jsx)(Root22, { ...popperScope, children: /* @__PURE__ */ (0, import_jsx_runtime22.jsx)(
+    return /* @__PURE__ */ (0, import_jsx_runtime16.jsx)(Root22, { ...popperScope, children: /* @__PURE__ */ (0, import_jsx_runtime16.jsx)(
       PopoverProvider,
       {
         scope: __scopePopover,
@@ -32883,10 +32425,10 @@ For more information, see https://radix-ui.com/primitives/docs/components/${titl
         triggerRef,
         open,
         onOpenChange: setOpen,
-        onOpenToggle: React41.useCallback(() => setOpen((prevOpen) => !prevOpen), [setOpen]),
+        onOpenToggle: React35.useCallback(() => setOpen((prevOpen) => !prevOpen), [setOpen]),
         hasCustomAnchor,
-        onCustomAnchorAdd: React41.useCallback(() => setHasCustomAnchor(true), []),
-        onCustomAnchorRemove: React41.useCallback(() => setHasCustomAnchor(false), []),
+        onCustomAnchorAdd: React35.useCallback(() => setHasCustomAnchor(true), []),
+        onCustomAnchorRemove: React35.useCallback(() => setHasCustomAnchor(false), []),
         modal,
         children
       }
@@ -32894,28 +32436,28 @@ For more information, see https://radix-ui.com/primitives/docs/components/${titl
   };
   Popover.displayName = POPOVER_NAME;
   var ANCHOR_NAME2 = "PopoverAnchor";
-  var PopoverAnchor = React41.forwardRef(
+  var PopoverAnchor = React35.forwardRef(
     (props, forwardedRef) => {
       const { __scopePopover, ...anchorProps } = props;
       const context = usePopoverContext(ANCHOR_NAME2, __scopePopover);
       const popperScope = usePopperScope(__scopePopover);
       const { onCustomAnchorAdd, onCustomAnchorRemove } = context;
-      React41.useEffect(() => {
+      React35.useEffect(() => {
         onCustomAnchorAdd();
         return () => onCustomAnchorRemove();
       }, [onCustomAnchorAdd, onCustomAnchorRemove]);
-      return /* @__PURE__ */ (0, import_jsx_runtime22.jsx)(Anchor, { ...popperScope, ...anchorProps, ref: forwardedRef });
+      return /* @__PURE__ */ (0, import_jsx_runtime16.jsx)(Anchor, { ...popperScope, ...anchorProps, ref: forwardedRef });
     }
   );
   PopoverAnchor.displayName = ANCHOR_NAME2;
   var TRIGGER_NAME2 = "PopoverTrigger";
-  var PopoverTrigger = React41.forwardRef(
+  var PopoverTrigger = React35.forwardRef(
     (props, forwardedRef) => {
       const { __scopePopover, ...triggerProps } = props;
       const context = usePopoverContext(TRIGGER_NAME2, __scopePopover);
       const popperScope = usePopperScope(__scopePopover);
       const composedTriggerRef = useComposedRefs(forwardedRef, context.triggerRef);
-      const trigger = /* @__PURE__ */ (0, import_jsx_runtime22.jsx)(
+      const trigger = /* @__PURE__ */ (0, import_jsx_runtime16.jsx)(
         Primitive.button,
         {
           type: "button",
@@ -32928,7 +32470,7 @@ For more information, see https://radix-ui.com/primitives/docs/components/${titl
           onClick: composeEventHandlers(props.onClick, context.onOpenToggle)
         }
       );
-      return context.hasCustomAnchor ? trigger : /* @__PURE__ */ (0, import_jsx_runtime22.jsx)(Anchor, { asChild: true, ...popperScope, children: trigger });
+      return context.hasCustomAnchor ? trigger : /* @__PURE__ */ (0, import_jsx_runtime16.jsx)(Anchor, { asChild: true, ...popperScope, children: trigger });
     }
   );
   PopoverTrigger.displayName = TRIGGER_NAME2;
@@ -32939,32 +32481,32 @@ For more information, see https://radix-ui.com/primitives/docs/components/${titl
   var PopoverPortal = (props) => {
     const { __scopePopover, forceMount, children, container } = props;
     const context = usePopoverContext(PORTAL_NAME3, __scopePopover);
-    return /* @__PURE__ */ (0, import_jsx_runtime22.jsx)(PortalProvider2, { scope: __scopePopover, forceMount, children: /* @__PURE__ */ (0, import_jsx_runtime22.jsx)(Presence, { present: forceMount || context.open, children: /* @__PURE__ */ (0, import_jsx_runtime22.jsx)(Portal, { asChild: true, container, children }) }) });
+    return /* @__PURE__ */ (0, import_jsx_runtime16.jsx)(PortalProvider2, { scope: __scopePopover, forceMount, children: /* @__PURE__ */ (0, import_jsx_runtime16.jsx)(Presence, { present: forceMount || context.open, children: /* @__PURE__ */ (0, import_jsx_runtime16.jsx)(Portal, { asChild: true, container, children }) }) });
   };
   PopoverPortal.displayName = PORTAL_NAME3;
   var CONTENT_NAME3 = "PopoverContent";
-  var PopoverContent = React41.forwardRef(
+  var PopoverContent = React35.forwardRef(
     (props, forwardedRef) => {
       const portalContext = usePortalContext2(CONTENT_NAME3, props.__scopePopover);
       const { forceMount = portalContext.forceMount, ...contentProps } = props;
       const context = usePopoverContext(CONTENT_NAME3, props.__scopePopover);
-      return /* @__PURE__ */ (0, import_jsx_runtime22.jsx)(Presence, { present: forceMount || context.open, children: context.modal ? /* @__PURE__ */ (0, import_jsx_runtime22.jsx)(PopoverContentModal, { ...contentProps, ref: forwardedRef }) : /* @__PURE__ */ (0, import_jsx_runtime22.jsx)(PopoverContentNonModal, { ...contentProps, ref: forwardedRef }) });
+      return /* @__PURE__ */ (0, import_jsx_runtime16.jsx)(Presence, { present: forceMount || context.open, children: context.modal ? /* @__PURE__ */ (0, import_jsx_runtime16.jsx)(PopoverContentModal, { ...contentProps, ref: forwardedRef }) : /* @__PURE__ */ (0, import_jsx_runtime16.jsx)(PopoverContentNonModal, { ...contentProps, ref: forwardedRef }) });
     }
   );
   PopoverContent.displayName = CONTENT_NAME3;
   var Slot3 = createSlot4("PopoverContent.RemoveScroll");
-  var PopoverContentModal = React41.forwardRef(
+  var PopoverContentModal = React35.forwardRef(
     (props, forwardedRef) => {
       const context = usePopoverContext(CONTENT_NAME3, props.__scopePopover);
-      const contentRef = React41.useRef(null);
+      const contentRef = React35.useRef(null);
       const composedRefs = useComposedRefs(forwardedRef, contentRef);
-      const isRightClickOutsideRef = React41.useRef(false);
-      React41.useEffect(() => {
+      const isRightClickOutsideRef = React35.useRef(false);
+      React35.useEffect(() => {
         const content = contentRef.current;
         if (content)
           return hideOthers(content);
       }, []);
-      return /* @__PURE__ */ (0, import_jsx_runtime22.jsx)(Combination_default, { as: Slot3, allowPinchZoom: true, children: /* @__PURE__ */ (0, import_jsx_runtime22.jsx)(
+      return /* @__PURE__ */ (0, import_jsx_runtime16.jsx)(Combination_default, { as: Slot3, allowPinchZoom: true, children: /* @__PURE__ */ (0, import_jsx_runtime16.jsx)(
         PopoverContentImpl,
         {
           ...props,
@@ -32995,12 +32537,12 @@ For more information, see https://radix-ui.com/primitives/docs/components/${titl
       ) });
     }
   );
-  var PopoverContentNonModal = React41.forwardRef(
+  var PopoverContentNonModal = React35.forwardRef(
     (props, forwardedRef) => {
       const context = usePopoverContext(CONTENT_NAME3, props.__scopePopover);
-      const hasInteractedOutsideRef = React41.useRef(false);
-      const hasPointerDownOutsideRef = React41.useRef(false);
-      return /* @__PURE__ */ (0, import_jsx_runtime22.jsx)(
+      const hasInteractedOutsideRef = React35.useRef(false);
+      const hasPointerDownOutsideRef = React35.useRef(false);
+      return /* @__PURE__ */ (0, import_jsx_runtime16.jsx)(
         PopoverContentImpl,
         {
           ...props,
@@ -33037,7 +32579,7 @@ For more information, see https://radix-ui.com/primitives/docs/components/${titl
       );
     }
   );
-  var PopoverContentImpl = React41.forwardRef(
+  var PopoverContentImpl = React35.forwardRef(
     (props, forwardedRef) => {
       const {
         __scopePopover,
@@ -33054,7 +32596,7 @@ For more information, see https://radix-ui.com/primitives/docs/components/${titl
       const context = usePopoverContext(CONTENT_NAME3, __scopePopover);
       const popperScope = usePopperScope(__scopePopover);
       useFocusGuards();
-      return /* @__PURE__ */ (0, import_jsx_runtime22.jsx)(
+      return /* @__PURE__ */ (0, import_jsx_runtime16.jsx)(
         FocusScope,
         {
           asChild: true,
@@ -33062,7 +32604,7 @@ For more information, see https://radix-ui.com/primitives/docs/components/${titl
           trapped: trapFocus,
           onMountAutoFocus: onOpenAutoFocus,
           onUnmountAutoFocus: onCloseAutoFocus,
-          children: /* @__PURE__ */ (0, import_jsx_runtime22.jsx)(
+          children: /* @__PURE__ */ (0, import_jsx_runtime16.jsx)(
             DismissableLayer,
             {
               asChild: true,
@@ -33072,7 +32614,7 @@ For more information, see https://radix-ui.com/primitives/docs/components/${titl
               onPointerDownOutside,
               onFocusOutside,
               onDismiss: () => context.onOpenChange(false),
-              children: /* @__PURE__ */ (0, import_jsx_runtime22.jsx)(
+              children: /* @__PURE__ */ (0, import_jsx_runtime16.jsx)(
                 Content2,
                 {
                   "data-state": getState2(context.open),
@@ -33101,11 +32643,11 @@ For more information, see https://radix-ui.com/primitives/docs/components/${titl
     }
   );
   var CLOSE_NAME2 = "PopoverClose";
-  var PopoverClose = React41.forwardRef(
+  var PopoverClose = React35.forwardRef(
     (props, forwardedRef) => {
       const { __scopePopover, ...closeProps } = props;
       const context = usePopoverContext(CLOSE_NAME2, __scopePopover);
-      return /* @__PURE__ */ (0, import_jsx_runtime22.jsx)(
+      return /* @__PURE__ */ (0, import_jsx_runtime16.jsx)(
         Primitive.button,
         {
           type: "button",
@@ -33118,11 +32660,11 @@ For more information, see https://radix-ui.com/primitives/docs/components/${titl
   );
   PopoverClose.displayName = CLOSE_NAME2;
   var ARROW_NAME2 = "PopoverArrow";
-  var PopoverArrow = React41.forwardRef(
+  var PopoverArrow = React35.forwardRef(
     (props, forwardedRef) => {
       const { __scopePopover, ...arrowProps } = props;
       const popperScope = usePopperScope(__scopePopover);
-      return /* @__PURE__ */ (0, import_jsx_runtime22.jsx)(Arrow2, { ...popperScope, ...arrowProps, ref: forwardedRef });
+      return /* @__PURE__ */ (0, import_jsx_runtime16.jsx)(Arrow2, { ...popperScope, ...arrowProps, ref: forwardedRef });
     }
   );
   PopoverArrow.displayName = ARROW_NAME2;
@@ -33135,10 +32677,10 @@ For more information, see https://radix-ui.com/primitives/docs/components/${titl
   var Content22 = PopoverContent;
 
   // src/renderer/components/ui/popover.tsx
-  var import_jsx_runtime23 = __toESM(require_jsx_runtime());
+  var import_jsx_runtime17 = __toESM(require_jsx_runtime());
   var Popover2 = Root23;
   var PopoverTrigger2 = Trigger2;
-  var PopoverContent2 = React42.forwardRef(({ className, align = "center", sideOffset = 4, ...props }, ref) => /* @__PURE__ */ (0, import_jsx_runtime23.jsx)(Portal3, { children: /* @__PURE__ */ (0, import_jsx_runtime23.jsx)(
+  var PopoverContent2 = React36.forwardRef(({ className, align = "center", sideOffset = 4, ...props }, ref) => /* @__PURE__ */ (0, import_jsx_runtime17.jsx)(Portal3, { children: /* @__PURE__ */ (0, import_jsx_runtime17.jsx)(
     Content22,
     {
       ref,
@@ -33153,7 +32695,460 @@ For more information, see https://radix-ui.com/primitives/docs/components/${titl
   ) }));
   PopoverContent2.displayName = Content22.displayName;
 
+  // src/renderer/components/CommandPalette.tsx
+  var import_jsx_runtime18 = __toESM(require_jsx_runtime());
+  var getIcon = (label, type) => {
+    const lower = label.toLowerCase();
+    if (lower.includes("clipboard"))
+      return /* @__PURE__ */ (0, import_jsx_runtime18.jsx)(Clipboard, { className: "w-4 h-4" });
+    if (lower.includes("color"))
+      return /* @__PURE__ */ (0, import_jsx_runtime18.jsx)(Pipette, { className: "w-4 h-4" });
+    if (lower.includes("translator"))
+      return /* @__PURE__ */ (0, import_jsx_runtime18.jsx)(Languages, { className: "w-4 h-4" });
+    if (lower.includes("dictionary"))
+      return /* @__PURE__ */ (0, import_jsx_runtime18.jsx)(BookOpen, { className: "w-4 h-4" });
+    if (lower.includes("counter"))
+      return /* @__PURE__ */ (0, import_jsx_runtime18.jsx)(MessageSquare, { className: "w-4 h-4" });
+    if (lower.includes("clock"))
+      return /* @__PURE__ */ (0, import_jsx_runtime18.jsx)(Globe, { className: "w-4 h-4" });
+    if (lower.includes("currency"))
+      return /* @__PURE__ */ (0, import_jsx_runtime18.jsx)(DollarSign, { className: "w-4 h-4" });
+    if (lower.includes("units"))
+      return /* @__PURE__ */ (0, import_jsx_runtime18.jsx)(Ruler, { className: "w-4 h-4" });
+    if (lower.includes("translate") || lower.includes("convert"))
+      return /* @__PURE__ */ (0, import_jsx_runtime18.jsx)(ArrowRight, { className: "w-4 h-4" });
+    return /* @__PURE__ */ (0, import_jsx_runtime18.jsx)(ArrowRight, { className: "w-4 h-4" });
+  };
+  function CommandPalette() {
+    const [open, setOpen] = (0, import_react4.useState)(false);
+    const [query, setQuery] = (0, import_react4.useState)("");
+    const [suggestions, setSuggestions] = (0, import_react4.useState)([]);
+    const [widgets, setWidgets] = (0, import_react4.useState)([]);
+    const [capturedText, setCapturedText] = (0, import_react4.useState)("");
+    const [selectedActionId, setSelectedActionId] = (0, import_react4.useState)(null);
+    const [popoverOpen, setPopoverOpen] = (0, import_react4.useState)(false);
+    const [popoverContent, setPopoverContent] = (0, import_react4.useState)("");
+    const [popoverAnchor, setPopoverAnchor] = (0, import_react4.useState)(null);
+    const inputRef = (0, import_react4.useRef)(null);
+    (0, import_react4.useEffect)(() => {
+      async function loadWidgets() {
+        const w = await window.electronAPI.getWidgets();
+        setWidgets(w);
+      }
+      loadWidgets();
+    }, []);
+    (0, import_react4.useEffect)(() => {
+      const onShow = (_event, data) => {
+        setOpen(true);
+        setSelectedActionId(null);
+        setPopoverOpen(false);
+        if (data?.capturedText)
+          setCapturedText(data.capturedText);
+        else
+          window.electronAPI.getCapturedText().then(setCapturedText);
+      };
+      window.electronAPI.onPaletteOpened?.(onShow);
+    }, []);
+    (0, import_react4.useEffect)(() => {
+      let active = true;
+      const fetchSuggestions = async () => {
+        const res = await window.electronAPI.getSuggestions(query || "");
+        if (active)
+          setSuggestions(res);
+      };
+      fetchSuggestions();
+      return () => {
+        active = false;
+      };
+    }, [query]);
+    async function handleOpenWidget(widgetId) {
+      try {
+        const text = capturedText || await window.electronAPI.getCapturedText();
+        const res = await window.electronAPI.openWidget(widgetId, { selectedText: text });
+        if (res?.success !== false) {
+          setOpen(false);
+        }
+      } catch (error) {
+        console.error("Error opening widget:", error);
+      }
+    }
+    async function handleExecuteAction(actionId, triggerElement) {
+      console.log("=== handleExecuteAction START ===");
+      console.log("actionId:", actionId);
+      console.log("triggerElement:", triggerElement);
+      setSelectedActionId(actionId);
+      try {
+        const text = capturedText || await window.electronAPI.getCapturedText();
+        console.log("Executing action:", actionId, "with text:", text);
+        if (!window.electronAPI?.executeAction) {
+          console.error("executeAction not available on window.electronAPI");
+          return;
+        }
+        const res = await window.electronAPI.executeAction(actionId, text);
+        console.log("Raw action result:", res);
+        let resultText = "";
+        if (res && typeof res === "object") {
+          if (res.success === true && res.result) {
+            if (res.result.translatedText) {
+              resultText = res.result.translatedText;
+            } else if (typeof res.result === "string") {
+              resultText = res.result;
+            } else if (res.result.success === false) {
+              resultText = `Error: ${res.result.error || "Unknown error"}`;
+            } else {
+              resultText = JSON.stringify(res.result);
+            }
+          } else if (res.success === false) {
+            resultText = `Error: ${res.error || "Unknown error"}`;
+          } else if (res.result) {
+            if (res.result.success === false) {
+              resultText = `Error: ${res.result.error || "Unknown error"}`;
+            } else if (res.result.translatedText) {
+              resultText = res.result.translatedText;
+            } else {
+              resultText = JSON.stringify(res.result);
+            }
+          } else if (res.error) {
+            resultText = `Error: ${res.error}`;
+          } else {
+            resultText = JSON.stringify(res);
+          }
+        } else {
+          resultText = typeof res === "string" ? res : String(res);
+        }
+        console.log("Final resultText:", resultText);
+        setPopoverContent(resultText);
+        setPopoverAnchor(triggerElement);
+        setPopoverOpen(true);
+        console.log("Popover opened!");
+        setTimeout(() => {
+          console.log("Auto-hiding popover");
+          setPopoverOpen(false);
+          setSelectedActionId(null);
+        }, 3e3);
+      } catch (error) {
+        console.error("Error executing action:", error);
+        setPopoverContent(`Error: ${String(error)}`);
+        setPopoverAnchor(triggerElement);
+        setPopoverOpen(true);
+      }
+    }
+    const suggestedItems = suggestions.slice(0, 4);
+    const actionItems = suggestions.filter((s) => s.type === "action");
+    if (!open)
+      return null;
+    const isError = popoverContent?.startsWith("Error:");
+    return /* @__PURE__ */ (0, import_jsx_runtime18.jsx)(
+      "div",
+      {
+        style: {
+          width: "550px",
+          height: "328px",
+          background: "transparent",
+          position: "relative",
+          pointerEvents: "none"
+        },
+        children: /* @__PURE__ */ (0, import_jsx_runtime18.jsxs)(
+          Command,
+          {
+            className: "h-[328px] w-[270px]",
+            style: {
+              position: "absolute",
+              left: 0,
+              top: 0,
+              pointerEvents: "auto"
+            },
+            children: [
+              /* @__PURE__ */ (0, import_jsx_runtime18.jsx)(
+                CommandInput,
+                {
+                  ref: inputRef,
+                  placeholder: "search...",
+                  value: query,
+                  onValueChange: setQuery,
+                  autoFocus: true
+                }
+              ),
+              /* @__PURE__ */ (0, import_jsx_runtime18.jsxs)(CommandList, { children: [
+                /* @__PURE__ */ (0, import_jsx_runtime18.jsx)(CommandEmpty, { children: /* @__PURE__ */ (0, import_jsx_runtime18.jsx)(Button, { variant: "link", children: "request widget" }) }),
+                suggestedItems.length > 0 && /* @__PURE__ */ (0, import_jsx_runtime18.jsxs)(CommandGroup, { children: [
+                  /* @__PURE__ */ (0, import_jsx_runtime18.jsx)("div", { "cmdk-group-heading": "", children: "suggested" }),
+                  suggestedItems.map((s) => {
+                    if (s.type === "widget") {
+                      return /* @__PURE__ */ (0, import_jsx_runtime18.jsxs)(
+                        CommandItem,
+                        {
+                          onSelect: () => handleOpenWidget(s.id),
+                          className: "cursor-pointer",
+                          children: [
+                            getIcon(s.label, s.type),
+                            /* @__PURE__ */ (0, import_jsx_runtime18.jsx)("span", { children: s.label })
+                          ]
+                        },
+                        s.id
+                      );
+                    } else {
+                      return /* @__PURE__ */ (0, import_jsx_runtime18.jsxs)(Popover2, { open: popoverOpen && selectedActionId === s.id, children: [
+                        /* @__PURE__ */ (0, import_jsx_runtime18.jsx)(PopoverTrigger2, { asChild: true, children: /* @__PURE__ */ (0, import_jsx_runtime18.jsxs)(
+                          CommandItem,
+                          {
+                            value: s.id,
+                            onSelect: (value) => {
+                              const element = document.querySelector(`[data-action-id="${s.id}"]`);
+                              if (element) {
+                                handleExecuteAction(s.id, element);
+                              }
+                            },
+                            className: `cursor-pointer ${selectedActionId === s.id ? "bg-ink-200" : ""}`,
+                            "data-action-id": s.id,
+                            children: [
+                              /* @__PURE__ */ (0, import_jsx_runtime18.jsx)(CornerDownRight, { className: "w-4 h-4" }),
+                              /* @__PURE__ */ (0, import_jsx_runtime18.jsx)("span", { children: s.label })
+                            ]
+                          }
+                        ) }),
+                        /* @__PURE__ */ (0, import_jsx_runtime18.jsx)(
+                          PopoverContent2,
+                          {
+                            side: "right",
+                            align: "center",
+                            className: `w-auto max-w-[300px] ${isError ? "border-red-500 bg-red-50" : ""}`,
+                            style: { pointerEvents: "auto" },
+                            children: /* @__PURE__ */ (0, import_jsx_runtime18.jsx)("div", { className: `text-sm ${isError ? "text-red-600" : ""}`, children: popoverContent })
+                          }
+                        )
+                      ] }, s.id);
+                    }
+                  })
+                ] }),
+                suggestedItems.length > 0 && widgets.length > 0 && /* @__PURE__ */ (0, import_jsx_runtime18.jsx)(CommandSeparator, {}),
+                widgets.length > 0 && /* @__PURE__ */ (0, import_jsx_runtime18.jsxs)(CommandGroup, { children: [
+                  /* @__PURE__ */ (0, import_jsx_runtime18.jsx)("div", { "cmdk-group-heading": "", children: "widgets" }),
+                  widgets.map((w) => /* @__PURE__ */ (0, import_jsx_runtime18.jsxs)(
+                    CommandItem,
+                    {
+                      onSelect: () => handleOpenWidget(w.id),
+                      className: "cursor-pointer",
+                      children: [
+                        getIcon(w.label, "widget"),
+                        /* @__PURE__ */ (0, import_jsx_runtime18.jsx)("span", { children: w.label })
+                      ]
+                    },
+                    w.id
+                  ))
+                ] }),
+                widgets.length > 0 && actionItems.length > 0 && /* @__PURE__ */ (0, import_jsx_runtime18.jsx)(CommandSeparator, {}),
+                actionItems.length > 0 && /* @__PURE__ */ (0, import_jsx_runtime18.jsxs)(CommandGroup, { children: [
+                  /* @__PURE__ */ (0, import_jsx_runtime18.jsx)("div", { "cmdk-group-heading": "", children: "actions" }),
+                  actionItems.map((a) => /* @__PURE__ */ (0, import_jsx_runtime18.jsxs)(Popover2, { open: popoverOpen && selectedActionId === a.id, children: [
+                    /* @__PURE__ */ (0, import_jsx_runtime18.jsx)(PopoverTrigger2, { asChild: true, children: /* @__PURE__ */ (0, import_jsx_runtime18.jsxs)(
+                      CommandItem,
+                      {
+                        value: a.id,
+                        onSelect: (value) => {
+                          const element = document.querySelector(`[data-action-id="${a.id}"]`);
+                          if (element) {
+                            handleExecuteAction(a.id, element);
+                          }
+                        },
+                        className: `cursor-pointer ${selectedActionId === a.id ? "bg-ink-200" : ""}`,
+                        "data-action-id": a.id,
+                        children: [
+                          /* @__PURE__ */ (0, import_jsx_runtime18.jsx)(CornerDownRight, { className: "w-4 h-4" }),
+                          /* @__PURE__ */ (0, import_jsx_runtime18.jsx)("span", { children: a.label })
+                        ]
+                      }
+                    ) }),
+                    /* @__PURE__ */ (0, import_jsx_runtime18.jsx)(
+                      PopoverContent2,
+                      {
+                        side: "right",
+                        align: "center",
+                        className: `w-auto max-w-[300px] ${isError ? "border-red-500 bg-red-50" : ""}`,
+                        style: { pointerEvents: "auto" },
+                        children: /* @__PURE__ */ (0, import_jsx_runtime18.jsx)("div", { className: `text-sm ${isError ? "text-red-600" : ""}`, children: popoverContent })
+                      }
+                    )
+                  ] }, a.id))
+                ] }),
+                /* @__PURE__ */ (0, import_jsx_runtime18.jsx)(CommandItem, { className: "text-ink-700 border-t font-serif rounded-none text-lg italic", children: "by nullab" })
+              ] })
+            ]
+          }
+        )
+      }
+    );
+  }
+
+  // src/renderer/components/TranslatorWidget.tsx
+  var import_react5 = __toESM(require_react());
+
+  // src/renderer/components/ui/card.tsx
+  var React38 = __toESM(require_react());
+  var import_jsx_runtime19 = __toESM(require_jsx_runtime());
+  var Card = React38.forwardRef(({ className, ...props }, ref) => /* @__PURE__ */ (0, import_jsx_runtime19.jsx)(
+    "div",
+    {
+      ref,
+      className: cn(
+        "rounded-lg border bg-card text-card-foreground shadow-sm",
+        className
+      ),
+      ...props
+    }
+  ));
+  Card.displayName = "Card";
+  var CardHeader = React38.forwardRef(({ className, ...props }, ref) => /* @__PURE__ */ (0, import_jsx_runtime19.jsx)(
+    "div",
+    {
+      ref,
+      className: cn("flex flex-col space-y-1.5 p-6", className),
+      ...props
+    }
+  ));
+  CardHeader.displayName = "CardHeader";
+  var CardTitle = React38.forwardRef(({ className, ...props }, ref) => /* @__PURE__ */ (0, import_jsx_runtime19.jsx)(
+    "div",
+    {
+      ref,
+      className: cn(
+        "text-2xl font-semibold leading-none tracking-tight",
+        className
+      ),
+      ...props
+    }
+  ));
+  CardTitle.displayName = "CardTitle";
+  var CardDescription = React38.forwardRef(({ className, ...props }, ref) => /* @__PURE__ */ (0, import_jsx_runtime19.jsx)(
+    "div",
+    {
+      ref,
+      className: cn("text-sm text-muted-foreground", className),
+      ...props
+    }
+  ));
+  CardDescription.displayName = "CardDescription";
+  var CardContent = React38.forwardRef(({ className, ...props }, ref) => /* @__PURE__ */ (0, import_jsx_runtime19.jsx)("div", { ref, className: cn("p-6 pt-0", className), ...props }));
+  CardContent.displayName = "CardContent";
+  var CardFooter = React38.forwardRef(({ className, ...props }, ref) => /* @__PURE__ */ (0, import_jsx_runtime19.jsx)(
+    "div",
+    {
+      ref,
+      className: cn("flex items-center p-6 pt-0", className),
+      ...props
+    }
+  ));
+  CardFooter.displayName = "CardFooter";
+
+  // src/renderer/components/ui/separator.tsx
+  var React41 = __toESM(require_react());
+
+  // node_modules/@radix-ui/react-separator/dist/index.mjs
+  var React40 = __toESM(require_react(), 1);
+
+  // node_modules/@radix-ui/react-separator/node_modules/@radix-ui/react-primitive/dist/index.mjs
+  var React39 = __toESM(require_react(), 1);
+  var ReactDOM4 = __toESM(require_react_dom(), 1);
+  var import_jsx_runtime20 = __toESM(require_jsx_runtime(), 1);
+  var NODES2 = [
+    "a",
+    "button",
+    "div",
+    "form",
+    "h2",
+    "h3",
+    "img",
+    "input",
+    "label",
+    "li",
+    "nav",
+    "ol",
+    "p",
+    "select",
+    "span",
+    "svg",
+    "ul"
+  ];
+  var Primitive2 = NODES2.reduce((primitive, node) => {
+    const Slot4 = createSlot(`Primitive.${node}`);
+    const Node2 = React39.forwardRef((props, forwardedRef) => {
+      const { asChild, ...primitiveProps } = props;
+      const Comp = asChild ? Slot4 : node;
+      if (typeof window !== "undefined") {
+        window[Symbol.for("radix-ui")] = true;
+      }
+      return /* @__PURE__ */ (0, import_jsx_runtime20.jsx)(Comp, { ...primitiveProps, ref: forwardedRef });
+    });
+    Node2.displayName = `Primitive.${node}`;
+    return { ...primitive, [node]: Node2 };
+  }, {});
+
+  // node_modules/@radix-ui/react-separator/dist/index.mjs
+  var import_jsx_runtime21 = __toESM(require_jsx_runtime(), 1);
+  var NAME2 = "Separator";
+  var DEFAULT_ORIENTATION = "horizontal";
+  var ORIENTATIONS = ["horizontal", "vertical"];
+  var Separator = React40.forwardRef((props, forwardedRef) => {
+    const { decorative, orientation: orientationProp = DEFAULT_ORIENTATION, ...domProps } = props;
+    const orientation = isValidOrientation(orientationProp) ? orientationProp : DEFAULT_ORIENTATION;
+    const ariaOrientation = orientation === "vertical" ? orientation : void 0;
+    const semanticProps = decorative ? { role: "none" } : { "aria-orientation": ariaOrientation, role: "separator" };
+    return /* @__PURE__ */ (0, import_jsx_runtime21.jsx)(
+      Primitive2.div,
+      {
+        "data-orientation": orientation,
+        ...semanticProps,
+        ...domProps,
+        ref: forwardedRef
+      }
+    );
+  });
+  Separator.displayName = NAME2;
+  function isValidOrientation(orientation) {
+    return ORIENTATIONS.includes(orientation);
+  }
+  var Root3 = Separator;
+
+  // src/renderer/components/ui/separator.tsx
+  var import_jsx_runtime22 = __toESM(require_jsx_runtime());
+  var Separator2 = React41.forwardRef(
+    ({ className, orientation = "horizontal", decorative = true, ...props }, ref) => /* @__PURE__ */ (0, import_jsx_runtime22.jsx)(
+      Root3,
+      {
+        ref,
+        decorative,
+        orientation,
+        className: cn(
+          "shrink-0 bg-border",
+          orientation === "horizontal" ? "h-[1px] w-full" : "h-full w-[1px]",
+          className
+        ),
+        ...props
+      }
+    )
+  );
+  Separator2.displayName = Root3.displayName;
+
+  // src/renderer/components/ui/textarea.tsx
+  var React42 = __toESM(require_react());
+  var import_jsx_runtime23 = __toESM(require_jsx_runtime());
+  var Textarea = React42.forwardRef(({ className, ...props }, ref) => {
+    return /* @__PURE__ */ (0, import_jsx_runtime23.jsx)(
+      "textarea",
+      {
+        className: cn(
+          "flex min-h-[80px] w-full rounded-md border border-input bg-background px-3 py-2 text-base ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 md:text-sm",
+          className
+        ),
+        ref,
+        ...props
+      }
+    );
+  });
+  Textarea.displayName = "Textarea";
+
   // src/renderer/components/ui/combobox.tsx
+  var React43 = __toESM(require_react());
   var import_jsx_runtime24 = __toESM(require_jsx_runtime());
   function Combobox({
     value,
@@ -33335,34 +33330,8 @@ For more information, see https://radix-ui.com/primitives/docs/components/${titl
     ] });
   }
 
-  // src/renderer/components/ActionPopover.tsx
-  var import_jsx_runtime26 = __toESM(require_jsx_runtime());
-  function ActionPopover({ resultText }) {
-    const isError = resultText?.startsWith("Error:");
-    return /* @__PURE__ */ (0, import_jsx_runtime26.jsx)(
-      "div",
-      {
-        style: {
-          width: "100%",
-          height: "100%",
-          padding: 16,
-          background: "var(--ink-0, #FEFEFE)",
-          overflow: "auto",
-          borderRadius: 12,
-          outline: "1px var(--ink-400, rgba(20, 20, 20, 0.12)) solid",
-          outlineOffset: "-1px",
-          display: "flex",
-          flexDirection: "column",
-          justifyContent: "flex-start",
-          alignItems: "flex-start"
-        },
-        children: resultText ? isError ? /* @__PURE__ */ (0, import_jsx_runtime26.jsx)("p", { className: "body text-red-600", children: resultText }) : /* @__PURE__ */ (0, import_jsx_runtime26.jsx)("div", { className: "body whitespace-pre-wrap", children: resultText }) : /* @__PURE__ */ (0, import_jsx_runtime26.jsx)("p", { className: "body text-muted-foreground", children: "No result yet." })
-      }
-    );
-  }
-
   // src/renderer/App.tsx
-  var import_jsx_runtime27 = __toESM(require_jsx_runtime());
+  var import_jsx_runtime26 = __toESM(require_jsx_runtime());
   function App() {
     const [componentType, setComponentType] = (0, import_react6.useState)("palette");
     const [componentProps, setComponentProps] = (0, import_react6.useState)({});
@@ -33371,7 +33340,7 @@ For more information, see https://radix-ui.com/primitives/docs/components/${titl
         const handler = (_event, data) => {
           console.log("App: component-init received", data);
           const type = data.type;
-          if (type === "palette" || type === "translator" || type === "action-popover") {
+          if (type === "palette" || type === "translator") {
             setComponentType(type);
             setComponentProps(data.props || {});
           }
@@ -33383,8 +33352,6 @@ For more information, see https://radix-ui.com/primitives/docs/components/${titl
         console.log("App: hash changed to", hash);
         if (hash === "#translator") {
           setComponentType("translator");
-        } else if (hash === "#action-popover") {
-          setComponentType("action-popover");
         } else {
           setComponentType("palette");
         }
@@ -33417,21 +33384,18 @@ For more information, see https://radix-ui.com/primitives/docs/components/${titl
         window.removeEventListener("hashchange", handleHashChange);
       };
     }, []);
-    switch (componentType) {
-      case "translator":
-        return /* @__PURE__ */ (0, import_jsx_runtime27.jsx)(TranslatorWidget, { ...componentProps });
-      case "action-popover":
-        return /* @__PURE__ */ (0, import_jsx_runtime27.jsx)(ActionPopover, { ...componentProps });
-      case "palette":
-      default:
-        return /* @__PURE__ */ (0, import_jsx_runtime27.jsx)(CommandPalette, { ...componentProps });
-    }
+    return /* @__PURE__ */ (0, import_jsx_runtime26.jsx)("div", { style: {
+      width: "100vw",
+      height: "100vh",
+      background: "transparent",
+      overflow: "hidden"
+    }, children: componentType === "translator" ? /* @__PURE__ */ (0, import_jsx_runtime26.jsx)(TranslatorWidget, { ...componentProps }) : /* @__PURE__ */ (0, import_jsx_runtime26.jsx)(CommandPalette, { ...componentProps }) });
   }
 
   // src/renderer/index.tsx
-  var import_jsx_runtime28 = __toESM(require_jsx_runtime());
+  var import_jsx_runtime27 = __toESM(require_jsx_runtime());
   var root = (0, import_client.createRoot)(document.getElementById("root"));
-  root.render(/* @__PURE__ */ (0, import_jsx_runtime28.jsx)(App, {}));
+  root.render(/* @__PURE__ */ (0, import_jsx_runtime27.jsx)(App, {}));
 })();
 /*! Bundled license information:
 

@@ -597,6 +597,39 @@ label, button{
   text-transform: uppercase;
   line-height: 1.25;
 }
+.container{
+  width: 100%;
+}
+@media (min-width: 640px){
+
+  .container{
+    max-width: 640px;
+  }
+}
+@media (min-width: 768px){
+
+  .container{
+    max-width: 768px;
+  }
+}
+@media (min-width: 1024px){
+
+  .container{
+    max-width: 1024px;
+  }
+}
+@media (min-width: 1280px){
+
+  .container{
+    max-width: 1280px;
+  }
+}
+@media (min-width: 1536px){
+
+  .container{
+    max-width: 1536px;
+  }
+}
 .h2 {
     font-family: 'Instrument Serif', serif;
     font-size: 1.25rem;
@@ -761,6 +794,12 @@ label, button{
 .w-\[200px\]{
   width: 200px;
 }
+.w-\[270px\]{
+  width: 270px;
+}
+.w-auto{
+  width: auto;
+}
 .w-fit{
   width: -moz-fit-content;
   width: fit-content;
@@ -776,6 +815,9 @@ label, button{
 }
 .min-w-\[var\(--radix-select-trigger-width\)\]{
   min-width: var(--radix-select-trigger-width);
+}
+.max-w-\[300px\]{
+  max-width: 300px;
 }
 .max-w-lg{
   max-width: 32rem;
@@ -916,6 +958,10 @@ label, button{
   --tw-border-opacity: 1;
   border-color: rgb(var(--input) / var(--tw-border-opacity, 1));
 }
+.border-red-500{
+  --tw-border-opacity: 1;
+  border-color: rgb(239 68 68 / var(--tw-border-opacity, 1));
+}
 .bg-accent{
   --tw-bg-opacity: 1;
   background-color: rgb(var(--accent) / var(--tw-bg-opacity, 1));
@@ -965,6 +1011,10 @@ label, button{
 .bg-primary{
   --tw-bg-opacity: 1;
   background-color: rgb(var(--primary) / var(--tw-bg-opacity, 1));
+}
+.bg-red-50{
+  --tw-bg-opacity: 1;
+  background-color: rgb(254 242 242 / var(--tw-bg-opacity, 1));
 }
 .bg-transparent{
   background-color: transparent;
@@ -1258,6 +1308,17 @@ label, button{
 /* --- Base semantic mapping --- */
 
 /* --- Custom type classes --- */
+
+* {
+  box-sizing: border-box;
+}
+
+body, #root {
+  background: transparent !important;
+  margin: 0;
+  padding: 0;
+  overflow: hidden;
+}
 
 .placeholder\:text-ink-700::-moz-placeholder{
   color: var(--ink-700);

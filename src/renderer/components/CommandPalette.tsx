@@ -9,7 +9,12 @@ import {
   CommandList,
   CommandSeparator,
 } from "@/components/ui/command"
-import { ChevronDownIcon, 
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover"
+import { 
   CornerDownRight, 
   Clipboard, 
   Pipette, 
@@ -19,9 +24,8 @@ import { ChevronDownIcon,
   Globe, 
   DollarSign, 
   Ruler,
-  LanguagesIcon, 
   ArrowRight,
-  } from "lucide-react"
+} from "lucide-react"
 
 // ===========================
 // Types
@@ -57,8 +61,13 @@ export default function CommandPalette() {
   const [widgets, setWidgets] = useState<Widget[]>([])
   const [capturedText, setCapturedText] = useState("")
   const [selectedActionId, setSelectedActionId] = useState<string | null>(null)
+  
+  // Popover state
+  const [popoverOpen, setPopoverOpen] = useState(false)
+  const [popoverContent, setPopoverContent] = useState("")
+  const [popoverAnchor, setPopoverAnchor] = useState<HTMLElement | null>(null)
+  
   const inputRef = useRef<HTMLInputElement | null>(null)
-  const actionElementRefs = useRef<Record<string, HTMLElement>>({})
 
   // Load widgets once
   useEffect(() => {
@@ -73,7 +82,8 @@ export default function CommandPalette() {
   useEffect(() => {
     const onShow = (_event: any, data?: { capturedText?: string }) => {
       setOpen(true)
-      setSelectedActionId(null) // Clear selected action when palette opens
+      setSelectedActionId(null)
+      setPopoverOpen(false) // Close popover when palette opens
       if (data?.capturedText) setCapturedText(data.capturedText)
       else window.electronAPI.getCapturedText().then(setCapturedText)
     }
@@ -95,140 +105,87 @@ export default function CommandPalette() {
   async function handleOpenWidget(widgetId: string) {
     try {
       const text = capturedText || await window.electronAPI.getCapturedText()
-      console.log('Opening widget:', widgetId, 'with text:', text)
       const res = await window.electronAPI.openWidget(widgetId, { selectedText: text })
-      console.log('Widget open result:', res)
       if (res?.success !== false) {
-        setOpen(false) // Close palette when opening widget
-      } else {
-        console.error('Failed to open widget:', res)
+        setOpen(false)
       }
     } catch (error) {
       console.error('Error opening widget:', error)
     }
   }
 
-  // Update your handleExecuteAction function in CommandPalette.tsx
-  async function handleExecuteAction(actionId: string, element?: HTMLElement) {
+  // Execute action with popover
+  async function handleExecuteAction(actionId: string, triggerElement: HTMLElement) {
     console.log('=== handleExecuteAction START ===')
-    console.log('Action ID:', actionId)
-    console.log('Element:', element)
-
-    // Set the selected action for visual feedback
+    console.log('actionId:', actionId)
+    console.log('triggerElement:', triggerElement)
     setSelectedActionId(actionId)
 
     try {
-      if (!window.electronAPI) {
-        console.error('electronAPI not available')
-        return
-      }
-
       const text = capturedText || await window.electronAPI.getCapturedText()
       console.log('Executing action:', actionId, 'with text:', text)
-      const res = await window.electronAPI.executeAction(actionId, text)
-      console.log('Action result:', res)
       
+      if (!window.electronAPI?.executeAction) {
+        console.error('executeAction not available on window.electronAPI')
+        return
+      }
+      
+      const res = await window.electronAPI.executeAction(actionId, text)
+      console.log('Raw action result:', res)
+
       let resultText = ''
-      if (res && typeof res === 'object' && res.success === true) {
-        // Success case
-        if (res.result?.translatedText) {
-          resultText = res.result.translatedText
-        } else if (typeof res.result === "string") {
-          resultText = res.result
+      
+      // Handle the nested result structure
+      if (res && typeof res === 'object') {
+        if (res.success === true && res.result) {
+          if (res.result.translatedText) {
+            resultText = res.result.translatedText
+          } else if (typeof res.result === 'string') {
+            resultText = res.result
+          } else if (res.result.success === false) {
+            resultText = `Error: ${res.result.error || 'Unknown error'}`
+          } else {
+            resultText = JSON.stringify(res.result)
+          }
+        } else if (res.success === false) {
+          resultText = `Error: ${res.error || 'Unknown error'}`
         } else if (res.result) {
-          resultText = JSON.stringify(res.result)
+          if (res.result.success === false) {
+            resultText = `Error: ${res.result.error || 'Unknown error'}`
+          } else if (res.result.translatedText) {
+            resultText = res.result.translatedText
+          } else {
+            resultText = JSON.stringify(res.result)
+          }
+        } else if (res.error) {
+          resultText = `Error: ${res.error}`
         } else {
-          resultText = 'Action completed'
+          resultText = JSON.stringify(res)
         }
-      } else if (res && typeof res === 'object' && res.success === false) {
-        // Error case
-        const errorMsg = res.error || 'Unknown error'
-        resultText = `Error: ${errorMsg}`
       } else {
-        // Fallback
-        resultText = typeof res === 'string' ? res : `Error: ${JSON.stringify(res)}`
+        resultText = typeof res === 'string' ? res : String(res)
       }
       
       console.log('Final resultText:', resultText)
 
-      // Calculate position for popover window
-      let position = { x: 270 + 10, y: 100 } // Default fallback
+      // Set popover content and anchor
+      setPopoverContent(resultText)
+      setPopoverAnchor(triggerElement)
+      setPopoverOpen(true)
       
-      // Try to get element from refs if not provided
-      let targetElement = element || actionElementRefs.current[actionId]
-      
-      if (targetElement) {
-        // Get the Command component's bounding box (the entire palette window content area)
-        const commandElement = targetElement.closest('[cmdk-root]')
-        const commandRect = commandElement?.getBoundingClientRect()
-        
-        const rect = targetElement.getBoundingClientRect()
-        console.log('=== POSITION DEBUG ===')
-        console.log('Element rect:', {
-          top: rect.top,
-          left: rect.left,
-          right: rect.right,
-          bottom: rect.bottom,
-          width: rect.width,
-          height: rect.height
-        })
-        console.log('Command (palette) rect:', commandRect)
-        console.log('Window innerHeight:', window.innerHeight)
-        console.log('Window innerWidth:', window.innerWidth)
-        
-        if (rect.width > 0 && rect.height > 0) {
-          // CRITICAL: Use absolute position relative to the palette window
-          // rect.top is already relative to the viewport (palette window)
-          // Just need to add proper offset
-          
-          // Position horizontally to the right of palette (270px wide)
-          const x = 270 + 10
-          
-          // Position vertically aligned with the action item
-          // rect.top is relative to the palette window's content area
-          // We need to account for any scrolling in the command list
-          let y = rect.top
-          
-          // If there's a command element, adjust for its offset
-          if (commandRect) {
-            y = rect.top - commandRect.top + 40 // Add offset for search box height
-          }
-          
-          // Center the popover vertically on the action item
-          y = y + (rect.height / 2) - 40 // Subtract half of popover height (80px / 2)
-          
-          position = { 
-            x: Math.round(x),
-            y: Math.round(y)
-          }
-          console.log('Calculated position:', position)
-        } else {
-          console.warn('Element has zero dimensions, using fallback')
-        }
-      } else {
-        console.warn('No element found, using fallback position')
-      }
+      console.log('Popover opened!')
 
-      console.log('Final position being sent:', position)
-
-      // Show popover in separate window
-      const popoverResult = await window.electronAPI.showActionPopover(resultText, position)
-      console.log('showActionPopover result:', popoverResult)
-      console.log('=== handleExecuteAction END ===')
+      // Auto-hide after 3 seconds
+      setTimeout(() => {
+        console.log('Auto-hiding popover')
+        setPopoverOpen(false)
+        setSelectedActionId(null)
+      }, 3000)
     } catch (error) {
-      console.error('=== ERROR in handleExecuteAction ===')
-      console.error('Error:', error)
-      const errorText = `Error: ${String(error)}`
-      
-      // Show error in popover at fallback position
-      if (window.electronAPI) {
-        try {
-          await window.electronAPI.showActionPopover(errorText, { x: 280, y: 100 })
-        } catch (popoverError) {
-          console.error('Failed to show error popover:', popoverError)
-        }
-      }
-      console.log('=== ERROR HANDLING END ===')
+      console.error('Error executing action:', error)
+      setPopoverContent(`Error: ${String(error)}`)
+      setPopoverAnchor(triggerElement)
+      setPopoverOpen(true)
     }
   }
 
@@ -237,145 +194,161 @@ export default function CommandPalette() {
 
   if (!open) return null
 
+  const isError = popoverContent?.startsWith('Error:')
+
   return (
-    <Command className="h-[328px]">
-      <CommandInput
-        ref={inputRef}
-        placeholder="search..."
-        value={query}
-        onValueChange={setQuery}
-        autoFocus
-      />
+    <div 
+      style={{ 
+        width: '550px', 
+        height: '328px', 
+        background: 'transparent',
+        position: 'relative',
+        pointerEvents: 'none'
+      }}
+    >
+      {/* Command Palette */}
+      <Command 
+        className="h-[328px] w-[270px]" 
+        style={{ 
+          position: 'absolute', 
+          left: 0, 
+          top: 0,
+          pointerEvents: 'auto'
+        }}
+      >
+        <CommandInput
+          ref={inputRef}
+          placeholder="search..."
+          value={query}
+          onValueChange={setQuery}
+          autoFocus
+        />
 
-      <CommandList>
-        <CommandEmpty>
-          <Button variant="link">request widget</Button>
-        </CommandEmpty>
+        <CommandList>
+          <CommandEmpty>
+            <Button variant="link">request widget</Button>
+          </CommandEmpty>
 
-        {/* ---- Suggested ---- */}
-        {suggestedItems.length > 0 && (
-          <CommandGroup>
-            <div cmdk-group-heading="">suggested</div>
-            {suggestedItems.map((s) => {
-              if (s.type === "widget") {
-                return (
-                  <CommandItem
-                    key={s.id}
-                    onSelect={() => handleOpenWidget(s.id)}
-                    className="cursor-pointer"
-                  >
-                    {getIcon(s.label, s.type)}
-                    <span>{s.label}</span>
-                  </CommandItem>
-                )
-              } else {
-                // Action - opens popover in separate window
-                return (
-                  <CommandItem
-                    key={s.id}
-                    value={s.id}
-                    ref={(el) => {
-                      if (el) {
-                        actionElementRefs.current[s.id] = el
-                      }
-                    }}
-                    onSelect={async (value) => {
-                      console.log('CommandItem onSelect fired for suggested action:', value)
-                      // Use setTimeout to ensure ref is set
-                      setTimeout(() => {
-                        const element = actionElementRefs.current[s.id]
-                        console.log('Element from ref for suggested action:', element)
+          {/* ---- Suggested ---- */}
+          {suggestedItems.length > 0 && (
+            <CommandGroup>
+              <div cmdk-group-heading="">suggested</div>
+              {suggestedItems.map((s) => {
+                if (s.type === "widget") {
+                  return (
+                    <CommandItem
+                      key={s.id}
+                      onSelect={() => handleOpenWidget(s.id)}
+                      className="cursor-pointer"
+                    >
+                      {getIcon(s.label, s.type)}
+                      <span>{s.label}</span>
+                    </CommandItem>
+                  )
+                } else {
+                  // Action with Popover
+                  return (
+                    <Popover key={s.id} open={popoverOpen && selectedActionId === s.id}>
+                      <PopoverTrigger asChild>
+                        <CommandItem
+                          value={s.id}
+                          onSelect={(value) => {
+                            const element = document.querySelector(`[data-action-id="${s.id}"]`) as HTMLElement
+                            if (element) {
+                              handleExecuteAction(s.id, element)
+                            }
+                          }}
+                          className={`cursor-pointer ${selectedActionId === s.id ? 'bg-ink-200' : ''}`}
+                          data-action-id={s.id}
+                        >
+                          <CornerDownRight className="w-4 h-4" />
+                          <span>{s.label}</span>
+                        </CommandItem>
+                      </PopoverTrigger>
+                      <PopoverContent 
+                        side="right" 
+                        align="center"
+                        className={`w-auto max-w-[300px] ${isError ? 'border-red-500 bg-red-50' : ''}`}
+                        style={{ pointerEvents: 'auto' }}
+                      >
+                        <div className={`text-sm ${isError ? 'text-red-600' : ''}`}>
+                          {popoverContent}
+                        </div>
+                      </PopoverContent>
+                    </Popover>
+                  )
+                }
+              })}
+            </CommandGroup>
+          )}
+
+          {(suggestedItems.length > 0 && widgets.length > 0) && (
+            <CommandSeparator />
+          )}
+
+          {/* ---- Widgets ---- */}
+          {widgets.length > 0 && (
+            <CommandGroup>
+              <div cmdk-group-heading="">widgets</div>
+              {widgets.map((w) => (
+                <CommandItem
+                  key={w.id}
+                  onSelect={() => handleOpenWidget(w.id)}
+                  className="cursor-pointer"
+                >
+                  {getIcon(w.label, "widget")}
+                  <span>{w.label}</span>
+                </CommandItem>
+              ))}
+            </CommandGroup>
+          )}
+
+          {(widgets.length > 0 && actionItems.length > 0) && (
+            <CommandSeparator />
+          )}
+
+          {/* ---- Actions ---- */}
+          {actionItems.length > 0 && (
+            <CommandGroup>
+              <div cmdk-group-heading="">actions</div>
+              {actionItems.map((a) => (
+                <Popover key={a.id} open={popoverOpen && selectedActionId === a.id}>
+                  <PopoverTrigger asChild>
+                    <CommandItem
+                      value={a.id}
+                      onSelect={(value) => {
+                        const element = document.querySelector(`[data-action-id="${a.id}"]`) as HTMLElement
                         if (element) {
-                          handleExecuteAction(s.id, element)
-                        } else {
-                          // Fallback: execute without element
-                          console.warn('Element ref not found, executing without element')
-                          handleExecuteAction(s.id)
+                          handleExecuteAction(a.id, element)
                         }
-                      }, 0)
-                    }}
-                    className={`cursor-pointer ${selectedActionId === s.id ? 'bg-ink-200' : ''}`}
-                    data-selected={selectedActionId === s.id}
+                      }}
+                      className={`cursor-pointer ${selectedActionId === a.id ? 'bg-ink-200' : ''}`}
+                      data-action-id={a.id}
+                    >
+                      <CornerDownRight className="w-4 h-4" />
+                      <span>{a.label}</span>
+                    </CommandItem>
+                  </PopoverTrigger>
+                  <PopoverContent 
+                    side="right" 
+                    align="center"
+                    className={`w-auto max-w-[300px] ${isError ? 'border-red-500 bg-red-50' : ''}`}
+                    style={{ pointerEvents: 'auto' }}
                   >
-                    <CornerDownRight />
-                    <span>{s.label}</span>
-                  </CommandItem>
-                )
-              }
-            })}
-          </CommandGroup>
-        )}
+                    <div className={`text-sm ${isError ? 'text-red-600' : ''}`}>
+                      {popoverContent}
+                    </div>
+                  </PopoverContent>
+                </Popover>
+              ))}
+            </CommandGroup>
+          )}
 
-        {(suggestedItems.length > 0 && widgets.length > 0) && (
-          <CommandSeparator />
-        )}
-
-        {/* ---- Widgets ---- */}
-        {widgets.length > 0 && (
-          <CommandGroup>
-            <div cmdk-group-heading="">widgets</div>
-            {widgets.map((w) => (
-              <CommandItem
-                key={w.id}
-                onSelect={() => handleOpenWidget(w.id)}
-                className="cursor-pointer"
-              >
-                {getIcon(w.label, "widget")}
-                <span>{w.label}</span>
-              </CommandItem>
-            ))}
-          </CommandGroup>
-        )}
-
-        {(widgets.length > 0 && actionItems.length > 0) && (
-          <CommandSeparator />
-        )}
-
-        {/* ---- Actions ---- */}
-        {actionItems.length > 0 && (
-          <CommandGroup>
-            <div cmdk-group-heading="">actions</div>
-            {actionItems.map((a) => (
-              <CommandItem
-                key={a.id}
-                value={a.id}
-                ref={(el) => {
-                  if (el) {
-                    actionElementRefs.current[a.id] = el
-                  }
-                }}
-                onSelect={async (value) => {
-                  console.log('CommandItem onSelect fired for action:', value)
-                  // Use setTimeout to ensure ref is set
-                  setTimeout(() => {
-                    const element = actionElementRefs.current[a.id]
-                    console.log('Element from ref for action:', element)
-                    if (element) {
-                      handleExecuteAction(a.id, element)
-                    } else {
-                      // Fallback: execute without element
-                      console.warn('Element ref not found, executing without element')
-                      handleExecuteAction(a.id)
-                    }
-                  }, 0)
-                }}
-                className={`cursor-pointer ${selectedActionId === a.id ? 'bg-ink-200' : ''}`}
-                data-selected={selectedActionId === a.id}
-              >
-                <CornerDownRight />
-                <span>{a.label}</span>
-              </CommandItem>
-            ))}
-          </CommandGroup>
-        )}
-
-
-        <CommandItem className="text-ink-700 border-t font-serif rounded-none text-lg italic">
-          by nullab
-        </CommandItem>
-      </CommandList>
-    </Command>
+          <CommandItem className="text-ink-700 border-t font-serif rounded-none text-lg italic">
+            by nullab
+          </CommandItem>
+        </CommandList>
+      </Command>
+    </div>
   )
 }
-
-

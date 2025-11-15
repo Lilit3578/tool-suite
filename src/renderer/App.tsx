@@ -2,9 +2,8 @@
 import React, { useState, useEffect } from 'react'
 import CommandPalette from './components/CommandPalette'
 import TranslatorWidget from './components/TranslatorWidget'
-import ActionPopover from './components/ActionPopover'
 
-type ComponentType = 'palette' | 'translator' | 'action-popover'
+type ComponentType = 'palette' | 'translator'
 
 interface ComponentProps {
   [key: string]: any
@@ -20,7 +19,8 @@ export default function App() {
       const handler = (_event: any, data: { type: string; props?: any }) => {
         console.log('App: component-init received', data)
         const type = data.type as ComponentType
-        if (type === 'palette' || type === 'translator' || type === 'action-popover') {
+        // Ignore action-popover - it's now embedded in CommandPalette
+        if (type === 'palette' || type === 'translator') {
           setComponentType(type)
           setComponentProps(data.props || {})
         }
@@ -34,8 +34,6 @@ export default function App() {
       console.log('App: hash changed to', hash)
       if (hash === '#translator') {
         setComponentType('translator')
-      } else if (hash === '#action-popover') {
-        setComponentType('action-popover')
       } else {
         setComponentType('palette')
       }
@@ -78,14 +76,19 @@ export default function App() {
     }
   }, [])
 
-  // Render the appropriate component
-  switch (componentType) {
-    case 'translator':
-      return <TranslatorWidget {...componentProps} />
-    case 'action-popover':
-      return <ActionPopover {...componentProps} />
-    case 'palette':
-    default:
-      return <CommandPalette {...componentProps} />
-  }
+  // Wrap in a transparent container and render the appropriate component
+  return (
+    <div style={{ 
+      width: '100vw', 
+      height: '100vh', 
+      background: 'transparent',
+      overflow: 'hidden'
+    }}>
+      {componentType === 'translator' ? (
+        <TranslatorWidget {...componentProps} />
+      ) : (
+        <CommandPalette {...componentProps} />
+      )}
+    </div>
+  )
 }

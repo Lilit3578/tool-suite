@@ -21,15 +21,15 @@ export const WINDOW_REGISTRY: Record<string, WindowTypeConfig> = {
   palette: {
     componentType: 'palette',
     defaultConfig: {
-      width: 270,
+      width: 550,  // Changed from 270 to accommodate popover
       height: 320,
-      transparent: false,
-      backgroundColor: 'white',
+      transparent: true,  // Changed to true
+      backgroundColor: '#00000000',  // Changed to fully transparent
       frame: false,
       alwaysOnTop: true,
       resizable: false,
       skipTaskbar: true,
-      blurDelay: 0, // Hide immediately on blur
+      blurDelay: 0,
     },
   },
   // Translator widget
@@ -44,10 +44,11 @@ export const WINDOW_REGISTRY: Record<string, WindowTypeConfig> = {
       alwaysOnTop: true,
       resizable: true,
       skipTaskbar: true,
-      blurDelay: 0, // Hide immediately on blur
+      blurDelay: 0,
     },
   },
-  // Action popover
+  // Action popover - NO LONGER NEEDED as separate window
+  // Keeping for backward compatibility, but won't be used
   'action-popover': {
     componentType: 'action-popover',
     defaultConfig: {
@@ -59,7 +60,7 @@ export const WINDOW_REGISTRY: Record<string, WindowTypeConfig> = {
       alwaysOnTop: true,
       resizable: false,
       skipTaskbar: true,
-      blurDelay: 200, // Small delay to prevent immediate hiding when clicking between windows
+      blurDelay: 200,
     },
   },
 }
@@ -88,4 +89,3 @@ export function getComponentType(widgetId: string): string {
   const registryEntry = WINDOW_REGISTRY[widgetId]
   return registryEntry?.componentType || 'palette'
 }
-

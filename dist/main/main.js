@@ -15460,16 +15460,18 @@ var WINDOW_REGISTRY = {
   palette: {
     componentType: "palette",
     defaultConfig: {
-      width: 270,
+      width: 550,
+      // Changed from 270 to accommodate popover
       height: 320,
-      transparent: false,
-      backgroundColor: "white",
+      transparent: true,
+      // Changed to true
+      backgroundColor: "#00000000",
+      // Changed to fully transparent
       frame: false,
       alwaysOnTop: true,
       resizable: false,
       skipTaskbar: true,
       blurDelay: 0
-      // Hide immediately on blur
     }
   },
   // Translator widget
@@ -15485,10 +15487,10 @@ var WINDOW_REGISTRY = {
       resizable: true,
       skipTaskbar: true,
       blurDelay: 0
-      // Hide immediately on blur
     }
   },
-  // Action popover
+  // Action popover - NO LONGER NEEDED as separate window
+  // Keeping for backward compatibility, but won't be used
   "action-popover": {
     componentType: "action-popover",
     defaultConfig: {
@@ -15501,7 +15503,6 @@ var WINDOW_REGISTRY = {
       resizable: false,
       skipTaskbar: true,
       blurDelay: 200
-      // Small delay to prevent immediate hiding when clicking between windows
     }
   }
 };
