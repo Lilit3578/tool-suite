@@ -1,9 +1,11 @@
 // src/renderer/App.tsx
 import React, { useState, useEffect } from 'react'
-import CommandPalette from './components/CommandPalette'
-import TranslatorWidget from './components/TranslatorWidget'
+import CommandPalette from './components/widgets/CommandPalette'
+import TranslatorWidget from './components/widgets/Translator'
+import CurrencyConverterWidget from './components/widgets/CurrencyConverter'
+import ClipboardHistoryWidget from './components/widgets/ClipboardHistory'
 
-type ComponentType = 'palette' | 'translator'
+type ComponentType = 'palette' | 'translator' | 'currency-converter' | 'clipboard-history'
 
 interface ComponentProps {
   [key: string]: any
@@ -20,7 +22,7 @@ export default function App() {
         console.log('App: component-init received', data)
         const type = data.type as ComponentType
         // Ignore action-popover - it's now embedded in CommandPalette
-        if (type === 'palette' || type === 'translator') {
+        if (type === 'palette' || type === 'translator' || type === 'currency-converter' || type === 'clipboard-history') {
           setComponentType(type)
           setComponentProps(data.props || {})
         }
@@ -34,6 +36,8 @@ export default function App() {
       console.log('App: hash changed to', hash)
       if (hash === '#translator') {
         setComponentType('translator')
+      } else if (hash === '#currency-converter') {
+        setComponentType('currency-converter')
       } else {
         setComponentType('palette')
       }
@@ -70,6 +74,17 @@ export default function App() {
       })
     }
 
+    // Legacy: Listen for currency-converter-init event (backward compatibility)
+    if (window.electronAPI?.onCurrencyConverterInit) {
+      window.electronAPI.onCurrencyConverterInit((_event: any, data?: any) => {
+        console.log('App: currency-converter-init event received (legacy)')
+        setComponentType('currency-converter')
+        if (data?.conversionRate) {
+          setComponentProps({ conversionRate: data.conversionRate })
+        }
+      })
+    }
+
     return () => {
       clearTimeout(timeoutId)
       window.removeEventListener('hashchange', handleHashChange)
@@ -78,14 +93,18 @@ export default function App() {
 
   // Wrap in a transparent container and render the appropriate component
   return (
-    <div style={{ 
-      width: '100vw', 
-      height: '100vh', 
+    <div style={{
+      width: '100vw',
+      height: '100vh',
       background: 'transparent',
       overflow: 'hidden'
     }}>
       {componentType === 'translator' ? (
         <TranslatorWidget {...componentProps} />
+      ) : componentType === 'currency-converter' ? (
+        <CurrencyConverterWidget {...componentProps} />
+      ) : componentType === 'clipboard-history' ? (
+        <ClipboardHistoryWidget {...componentProps} />
       ) : (
         <CommandPalette {...componentProps} />
       )}

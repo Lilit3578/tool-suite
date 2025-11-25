@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useRef } from "react"
+import React, { useEffect, useState, useRef, useMemo, useCallback } from "react"
 import { Button } from "@/components/ui/button"
 import {
   Command,
@@ -14,15 +14,15 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from "@/components/ui/popover"
-import { 
-  CornerDownRight, 
-  Clipboard, 
-  Pipette, 
-  Languages, 
-  BookOpen, 
-  MessageSquare, 
-  Globe, 
-  DollarSign, 
+import {
+  CornerDownRight,
+  Clipboard,
+  Pipette,
+  Languages,
+  BookOpen,
+  MessageSquare,
+  Globe,
+  DollarSign,
   Ruler,
   ArrowRight,
 } from "lucide-react"
@@ -61,40 +61,57 @@ export default function CommandPalette() {
   const [widgets, setWidgets] = useState<Widget[]>([])
   const [capturedText, setCapturedText] = useState("")
   const [selectedActionId, setSelectedActionId] = useState<string | null>(null)
-  
+
   // Popover state
   const [popoverOpen, setPopoverOpen] = useState(false)
   const [popoverContent, setPopoverContent] = useState("")
+  const [popoverIsError, setPopoverIsError] = useState(false)
   const [popoverAnchor, setPopoverAnchor] = useState<HTMLElement | null>(null)
-  
+  const [isNearRightEdge, setIsNearRightEdge] = useState(false)
+
   const inputRef = useRef<HTMLInputElement | null>(null)
   const actionRefs = useRef<Record<string, HTMLElement>>({})
+  const debounceTimerRef = useRef<NodeJS.Timeout | null>(null)
 
   // Handle mouse events to toggle click-through for transparent areas
   useEffect(() => {
     if (!open) return
-  
+
     let lastIgnoreState: boolean | null = null
-  
+
     const handleMouseMove = (e: MouseEvent) => {
       const paletteWidth = 270
-      const isOverPalette = e.clientX <= paletteWidth
-      const isOverPopover = popoverOpen && e.clientX >= 280 && e.clientX <= 550
+      let isOverPalette = e.clientX <= paletteWidth
+      let isOverPopover = false
+
+      if (popoverOpen) {
+        if (isNearRightEdge) {
+          // Popover is on the left (negative X from palette edge)
+          // Popover extends from -250px to 0px (left of palette)
+          isOverPopover = e.clientX >= -250 && e.clientX < 0
+          // Consider both palette and popover as interactive area
+          isOverPalette = isOverPalette || isOverPopover
+        } else {
+          // Popover is on the right (positive X from palette edge)
+          isOverPopover = e.clientX >= 280 && e.clientX <= 550
+        }
+      }
+
       const shouldIgnore = !isOverPalette && !isOverPopover
-  
+
       // Only update if state changed
       if (shouldIgnore !== lastIgnoreState) {
         console.log('Mouse at:', e.clientX, 'shouldIgnore:', shouldIgnore)
         lastIgnoreState = shouldIgnore
-        
+
         if (window.electronAPI?.setIgnoreMouseEvents) {
           window.electronAPI.setIgnoreMouseEvents(shouldIgnore)
         }
       }
     }
-  
+
     window.addEventListener('mousemove', handleMouseMove)
-    
+
     return () => {
       window.removeEventListener('mousemove', handleMouseMove)
       // Reset to interactive when unmounting
@@ -115,42 +132,79 @@ export default function CommandPalette() {
 
   // Open the palette
   useEffect(() => {
-    const onShow = (_event: any, data?: { capturedText?: string }) => {
+    const onShow = async (_event: any, data?: { capturedText?: string }) => {
       setOpen(true)
       setSelectedActionId(null)
       setPopoverOpen(false) // Close popover when palette opens
+
+      // Calculate if near right edge for popover positioning
+      if (window.electronAPI?.getWindowPosition) {
+        try {
+          const { windowX, screenWidth } = await window.electronAPI.getWindowPosition()
+          const paletteWidth = 270
+          const popoverWidth = 250
+          const margin = 20
+          const totalWidth = paletteWidth + popoverWidth + margin
+
+          // Check if popover would go off-screen on the right
+          const wouldClip = (windowX + totalWidth) > screenWidth
+          setIsNearRightEdge(wouldClip)
+          console.log('Popover positioning:', { windowX, screenWidth, wouldClip, side: wouldClip ? 'left' : 'right' })
+        } catch (error) {
+          console.error('Error getting window position:', error)
+          setIsNearRightEdge(false)
+        }
+      }
+
       if (data?.capturedText) setCapturedText(data.capturedText)
       else window.electronAPI.getCapturedText().then(setCapturedText)
     }
     window.electronAPI.onPaletteOpened?.(onShow)
   }, [])
 
-  // Update suggestions
+  // Update suggestions with debouncing (150ms) for better performance
   useEffect(() => {
     let active = true
-    const fetchSuggestions = async () => {
+
+    // Clear existing timer
+    if (debounceTimerRef.current) {
+      clearTimeout(debounceTimerRef.current)
+    }
+
+    // Debounce search queries to reduce IPC calls
+    debounceTimerRef.current = setTimeout(async () => {
       const res = await window.electronAPI.getSuggestions(query || "")
       if (active) setSuggestions(res)
+    }, query ? 150 : 0) // Immediate if empty query, 150ms delay for typed queries
+
+    return () => {
+      active = false
+      if (debounceTimerRef.current) {
+        clearTimeout(debounceTimerRef.current)
+      }
     }
-    fetchSuggestions()
-    return () => { active = false }
   }, [query])
 
-  // Execute widget
-  async function handleOpenWidget(widgetId: string) {
+  // Execute widget - memoized with useCallback for stable reference
+  const handleOpenWidget = useCallback(async (widgetId: string) => {
     try {
       const text = capturedText || await window.electronAPI.getCapturedText()
       const res = await window.electronAPI.openWidget(widgetId, { selectedText: text })
       if (res?.success !== false) {
+        // Hide the React component
         setOpen(false)
+        // Actually hide the Electron window
+        if (window.electronAPI?.hideCurrentWindow) {
+          await window.electronAPI.hideCurrentWindow()
+        }
       }
     } catch (error) {
       console.error('Error opening widget:', error)
     }
-  }
+  }, [capturedText])
 
-  // Execute action with popover
-  async function handleExecuteAction(actionId: string, triggerElement: HTMLElement) {
+  // Execute action with popover - memoized with useCallback
+  const handleExecuteAction = useCallback(async (actionId: string, triggerElement: HTMLElement) => {
     console.log('=== handleExecuteAction START ===')
     console.log('actionId:', actionId)
     console.log('triggerElement:', triggerElement)
@@ -158,56 +212,101 @@ export default function CommandPalette() {
 
     try {
       const text = capturedText || await window.electronAPI.getCapturedText()
+
       console.log('Executing action:', actionId, 'with text:', text)
-      
+
       if (!window.electronAPI?.executeAction) {
         console.error('executeAction not available on window.electronAPI')
         return
       }
-      
+
       const res = await window.electronAPI.executeAction(actionId, text)
-      console.log('Raw action result:', res)
+      console.log('=== RAW ACTION RESULT ===')
+      console.log('Type:', typeof res)
+      console.log('Full object:', res)
+      console.log('res.success:', res?.success)
+      console.log('res.result:', res?.result)
+      console.log('res.result type:', typeof res?.result)
+      if (res?.result) {
+        console.log('res.result.translatedText:', res.result.translatedText)
+        console.log('res.result.detectedSourceLanguage:', res.result.detectedSourceLanguage)
+      }
 
       let resultText = ''
-      
+      let isError = false
+
       // Handle the nested result structure
       if (res && typeof res === 'object') {
         if (res.success === true && res.result) {
-          if (res.result.translatedText) {
+          console.log('Success branch - res.result:', res.result)
+
+          // Check for translation result first (most specific)
+          if (typeof res.result === 'object' && res.result.translatedText) {
+            // Translation result - only show the translated text
             resultText = res.result.translatedText
+            isError = false
+            console.log('✓ Extracted translation:', resultText)
+          }
+          // Check if res.result is itself a response object (double-wrapped)
+          else if (typeof res.result === 'object' && 'success' in res.result) {
+            console.log('Double-wrapped result detected')
+            // Unwrap the inner response
+            if (res.result.success === true && res.result.result) {
+              resultText = typeof res.result.result === 'string'
+                ? res.result.result
+                : String(res.result.result)
+              isError = false
+            } else if (res.result.success === false) {
+              resultText = res.result.error || 'Unknown error'
+              isError = true
+            } else {
+              resultText = 'Unexpected response format'
+              isError = true
+            }
           } else if (typeof res.result === 'string') {
+            // Direct string result
+            console.log('String result:', res.result)
             resultText = res.result
-          } else if (res.result.success === false) {
-            resultText = `Error: ${res.result.error || 'Unknown error'}`
+            isError = false
           } else {
-            resultText = JSON.stringify(res.result)
+            // For other objects, try to extract meaningful text
+            console.log('Other object type, trying to extract text')
+            // Avoid showing [object Object] by checking common properties
+            if (res.result.text) {
+              resultText = res.result.text
+            } else if (res.result.value) {
+              resultText = res.result.value
+            } else {
+              // Last resort: stringify the object properly
+              console.warn('Could not find text/value property, stringifying:', res.result)
+              resultText = JSON.stringify(res.result, null, 2)
+            }
+            isError = false
           }
         } else if (res.success === false) {
-          resultText = `Error: ${res.error || 'Unknown error'}`
-        } else if (res.result) {
-          if (res.result.success === false) {
-            resultText = `Error: ${res.result.error || 'Unknown error'}`
-          } else if (res.result.translatedText) {
-            resultText = res.result.translatedText
-          } else {
-            resultText = JSON.stringify(res.result)
-          }
-        } else if (res.error) {
-          resultText = `Error: ${res.error}`
+          // Just show the error message without "Error:" prefix since we style it red
+          resultText = res.error || 'Unknown error'
+          isError = true
         } else {
-          resultText = JSON.stringify(res)
+          // Unexpected response format
+          console.error('Unexpected response format:', res)
+          resultText = 'Unexpected response format'
+          isError = true
         }
       } else {
+        console.log('Non-object result:', res)
         resultText = typeof res === 'string' ? res : String(res)
+        isError = false
       }
-      
-      console.log('Final resultText:', resultText)
+
+      console.log('Final resultText:', resultText, 'isError:', isError)
 
       // Set popover content and anchor
       setPopoverContent(resultText)
+      setPopoverIsError(isError)
       setPopoverAnchor(triggerElement)
       setPopoverOpen(true)
-      
+
       console.log('Popover opened!')
 
       // Auto-hide after 3 seconds
@@ -222,40 +321,41 @@ export default function CommandPalette() {
       setPopoverAnchor(triggerElement)
       setPopoverOpen(true)
     }
-  }
+  }, [capturedText, popoverOpen, selectedActionId, isNearRightEdge])
 
-  const suggestedItems = suggestions.slice(0, 4)
-  const suggestedIds = new Set(suggestedItems.map(s => s.id))
-  
-  // Filter out items already shown in suggested
-  const actionItems = suggestions.filter((s) => 
-    s.type === "action" && !suggestedIds.has(s.id)
+  // Memoize expensive filtering operations to prevent recalculation on every render
+  const suggestedItems = useMemo(() => suggestions.slice(0, 4), [suggestions])
+  const suggestedIds = useMemo(() => new Set(suggestedItems.map(s => s.id)), [suggestedItems])
+
+  // Filter out items already shown in suggested - memoized
+  const actionItems = useMemo(() =>
+    suggestions.filter((s) => s.type === "action" && !suggestedIds.has(s.id)),
+    [suggestions, suggestedIds]
   )
-  
-  const widgetItems = widgets.filter((w) => 
-    !suggestedIds.has(w.id)
+
+  const widgetItems = useMemo(() =>
+    widgets.filter((w) => !suggestedIds.has(w.id)),
+    [widgets, suggestedIds]
   )
 
   if (!open) return null
 
-  const isError = popoverContent?.startsWith('Error:')
-
   return (
-    <div 
-      style={{ 
-        width: '550px', 
-        height: '328px', 
+    <div
+      style={{
+        width: '550px',
+        height: '328px',
         background: 'transparent',
         position: 'relative',
         pointerEvents: 'none'
       }}
     >
       {/* Command Palette */}
-      <Command 
-        className="h-[328px] w-[270px]" 
-        style={{ 
-          position: 'absolute', 
-          left: 0, 
+      <Command
+        className="h-[328px] w-[270px]"
+        style={{
+          position: 'absolute',
+          left: 0,
           top: 0,
           pointerEvents: 'auto'
         }}
@@ -312,13 +412,13 @@ export default function CommandPalette() {
                           <span>{s.label}</span>
                         </CommandItem>
                       </PopoverTrigger>
-                      <PopoverContent 
-                        side="right" 
+                      <PopoverContent
+                        side={isNearRightEdge ? "left" : "right"}
                         align="center"
-                        className={`w-auto max-w-[250px] ${isError ? 'border-red-500 bg-red-50' : ''}`}
+                        className={`w-auto max-w-[250px] ${popoverIsError ? 'border-red-500 bg-red-50' : ''}`}
                         style={{ pointerEvents: 'auto' }}
                       >
-                        <div className={`body text-sm ${isError ? 'text-red-600' : ''}`}>
+                        <div className={`body text-sm ${popoverIsError ? 'text-red-600' : ''}`}>
                           {popoverContent}
                         </div>
                       </PopoverContent>
@@ -379,13 +479,13 @@ export default function CommandPalette() {
                       <span>{a.label}</span>
                     </CommandItem>
                   </PopoverTrigger>
-                  <PopoverContent 
-                    side="right" 
+                  <PopoverContent
+                    side={isNearRightEdge ? "left" : "right"}
                     align="center"
-                    className={`w-auto max-w-[250px] ${isError ? 'border-red-500 bg-red-50' : ''}`}
+                    className={`w-auto max-w-[250px] ${popoverIsError ? 'border-red-500 bg-red-50' : ''}`}
                     style={{ pointerEvents: 'auto' }}
                   >
-                    <div className={`body text-sm ${isError ? 'text-red-600' : ''}`}>
+                    <div className={`body text-sm ${popoverIsError ? 'text-red-600' : ''}`}>
                       {popoverContent}
                     </div>
                   </PopoverContent>

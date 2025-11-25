@@ -1,9 +1,9 @@
 // src/renderer/components/TranslatorWidget.tsx
 import React, { useEffect, useState } from "react"
-import { Card } from "./ui/card"
-import { Separator } from "./ui/separator"
-import { Textarea } from "./ui/textarea"
-import { Combobox } from "./ui/combobox"
+import { Card } from "../ui/card"
+import { Separator } from "../ui/separator"
+import { Textarea } from "../ui/textarea"
+import { Combobox } from "../ui/combobox"
 
 declare global {
   interface Window {
@@ -12,20 +12,64 @@ declare global {
 }
 
 const LANGUAGE_NAMES: Record<string, string> = {
-  it: "italian",
   en: "english",
+  zh: "chinese (mandarin)",
+  es: "spanish",
   fr: "french",
   de: "german",
-  es: "spanish",
+  ar: "arabic",
+  pt: "portuguese",
+  ru: "russian",
+  ja: "japanese",
+  hi: "hindi",
+  it: "italian",
+  nl: "dutch",
+  pl: "polish",
+  tr: "turkish",
+  hy: "armenian",
+  fa: "persian",
+  vi: "vietnamese",
+  id: "indonesian",
+  ko: "korean",
+  bn: "bengali",
+  ur: "urdu",
+  th: "thai",
+  sv: "swedish",
+  da: "danish",
+  fi: "finnish",
+  hu: "hungarian",
 }
 
+
 const LANGUAGE_CODES: Record<string, string> = {
-  italian: "it",
   english: "en",
+  "chinese (mandarin)": "zh",
+  spanish: "es",
   french: "fr",
   german: "de",
-  spanish: "es",
+  arabic: "ar",
+  portuguese: "pt",
+  russian: "ru",
+  japanese: "ja",
+  hindi: "hi",
+  italian: "it",
+  dutch: "nl",
+  polish: "pl",
+  turkish: "tr",
+  armenian: "hy",
+  persian: "fa",
+  vietnamese: "vi",
+  indonesian: "id",
+  korean: "ko",
+  bengali: "bn",
+  urdu: "ur",
+  thai: "th",
+  swedish: "sv",
+  danish: "da",
+  finnish: "fi",
+  hungarian: "hu",
 }
+
 
 interface TranslatorWidgetProps {
   selectedText?: string
@@ -77,18 +121,26 @@ export default function TranslatorWidget(props?: TranslatorWidgetProps) {
     setLoading(true)
     try {
       const res = await window.electronAPI.executeAction(`translate-${tgt}`, text)
+      console.log('[TranslatorWidget] Translation response:', res)
+      console.log('[TranslatorWidget] res.success:', res.success)
+      console.log('[TranslatorWidget] res.result:', res.result)
 
       if (res.success) {
+        console.log('[TranslatorWidget] Translated text:', res.result.translatedText)
+        console.log('[TranslatorWidget] Detected language:', res.result.detectedSourceLanguage)
+
         setTranslated(res.result.translatedText || "")
 
         if (res.result.detectedSourceLanguage) {
           const detected = LANGUAGE_NAMES[res.result.detectedSourceLanguage]
+          console.log('[TranslatorWidget] Detected language name:', detected)
           if (detected) setSourceLang(detected)
         }
       } else {
         setTranslated(`Error: ${res.error}`)
       }
     } catch (err) {
+      console.error('[TranslatorWidget] Error:', err)
       setTranslated(String(err))
     } finally {
       setLoading(false)
@@ -107,7 +159,8 @@ export default function TranslatorWidget(props?: TranslatorWidgetProps) {
           value={sourceLang}
           onChange={setSourceLang}
           items={Object.values(LANGUAGE_NAMES)}
-          placeholder="Select language"
+          placeholder="Detecting..."
+          searchPlaceholder="Search languages..."
           className="w-[160px]"
         />
 
@@ -117,7 +170,7 @@ export default function TranslatorWidget(props?: TranslatorWidgetProps) {
           value={input}
           onChange={(e) => setInput(e.target.value)}
           placeholder="Enter text to translate..."
-          className="bg-transparent border-none shadow-none resize-none p-0 text-sm"
+          className="bg-transparent border-none resize-none p-0 text-sm"
         />
       </div>
 
@@ -128,6 +181,7 @@ export default function TranslatorWidget(props?: TranslatorWidgetProps) {
           onChange={setTargetLang}
           items={Object.values(LANGUAGE_NAMES)}
           placeholder="Select language"
+          searchPlaceholder="Search languages..."
           className="w-[160px]"
         />
 

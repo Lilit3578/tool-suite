@@ -27,3 +27,25 @@ export interface Widget {
   initialize?: () => Promise<void> | void;
   show?: (selectedText?: string) => Promise<any> | any;
 }
+
+export interface ClipboardItem {
+  text?: string
+  image?: any  // NativeImage serialization
+  html?: string
+  rtf?: string
+  timestamp: number
+  preview: string
+}
+
+export interface ClipboardPreview {
+  id: string
+  preview: string
+  timestamp: number
+}
+
+export interface PaletteTriggerContext {
+  selectedText?: string
+  clipboardPreview?: ClipboardPreview[]
+  sourceApp?: string
+}
+

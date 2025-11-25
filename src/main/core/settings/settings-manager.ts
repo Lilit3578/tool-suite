@@ -1,6 +1,6 @@
 // src/main/settings-manager.ts
 import ElectronStore from 'electron-store'
-import { createLogger } from './logger'
+import { createLogger } from '../../utils/logger'
 const logger = createLogger('Settings')
 
 type Schema = {

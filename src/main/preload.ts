@@ -9,16 +9,32 @@ contextBridge.exposeInMainWorld('electronAPI', {
   getPreferences: () => ipcRenderer.invoke('get-preferences'),
   setPreferences: (prefs: any) => ipcRenderer.invoke('set-preferences', prefs),
   getCapturedText: () => ipcRenderer.invoke('get-captured-text'),
-  showActionPopover: (resultText: string, position: { x: number; y: number }) => 
+  showActionPopover: (resultText: string, position: { x: number; y: number }) =>
     ipcRenderer.invoke('show-action-popover', resultText, position),
   // Mouse events for click-through transparent areas
-  setIgnoreMouseEvents: (ignore: boolean) => 
+  setIgnoreMouseEvents: (ignore: boolean) =>
     ipcRenderer.send('set-ignore-mouse-events', ignore),
+  convertCurrency: (params: { from: string; to: string; amount: number }) =>
+    ipcRenderer.invoke('convert-currency', params),
+  getCurrencySettings: () =>
+    ipcRenderer.invoke('get-currency-settings'),
+  saveCurrencySettings: (settings: { defaultFrom?: string; defaultTo?: string }) =>
+    ipcRenderer.invoke('save-currency-settings', settings),
+  // Window resizing for auto-sizing
+  resizeWindow: (height: number) =>
+    ipcRenderer.send('resize-window', height),
+  // Clipboard item pasting
+  pasteClipboardItem: (id: string) =>
+    ipcRenderer.invoke('paste-clipboard-item', id),
+  // Get window position for popover positioning
+  getWindowPosition: () =>
+    ipcRenderer.invoke('get-window-position'),
   // Component rendering events
-  onComponentInit: (cb: (event: any, data: { type: string; props?: any }) => void) => 
+  onComponentInit: (cb: (event: any, data: { type: string; props?: any }) => void) =>
     ipcRenderer.on('component-init', cb),
   // Legacy events for backward compatibility
   onWidgetInit: (cb: (event: any, payload: any) => void) => ipcRenderer.on('widget-init', cb),
   onPaletteOpened: (cb: (event: any, data: any) => void) => ipcRenderer.on('palette-opened', cb),
+  hideCurrentWindow: () => ipcRenderer.invoke('hide-current-window'),
   onTranslatorInit: (cb: (event: any, data: any) => void) => ipcRenderer.on('translator-init', cb),
 })

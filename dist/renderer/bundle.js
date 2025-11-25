@@ -1085,7 +1085,7 @@
             }
             return dispatcher.useContext(Context);
           }
-          function useState19(initialState) {
+          function useState21(initialState) {
             var dispatcher = resolveDispatcher();
             return dispatcher.useState(initialState);
           }
@@ -1093,11 +1093,11 @@
             var dispatcher = resolveDispatcher();
             return dispatcher.useReducer(reducer, initialArg, init);
           }
-          function useRef15(initialValue) {
+          function useRef17(initialValue) {
             var dispatcher = resolveDispatcher();
             return dispatcher.useRef(initialValue);
           }
-          function useEffect20(create, deps) {
+          function useEffect22(create, deps) {
             var dispatcher = resolveDispatcher();
             return dispatcher.useEffect(create, deps);
           }
@@ -1109,11 +1109,11 @@
             var dispatcher = resolveDispatcher();
             return dispatcher.useLayoutEffect(create, deps);
           }
-          function useCallback9(callback, deps) {
+          function useCallback10(callback, deps) {
             var dispatcher = resolveDispatcher();
             return dispatcher.useCallback(callback, deps);
           }
-          function useMemo7(create, deps) {
+          function useMemo8(create, deps) {
             var dispatcher = resolveDispatcher();
             return dispatcher.useMemo(create, deps);
           }
@@ -1876,19 +1876,19 @@
           exports.memo = memo;
           exports.startTransition = startTransition;
           exports.unstable_act = act;
-          exports.useCallback = useCallback9;
+          exports.useCallback = useCallback10;
           exports.useContext = useContext4;
           exports.useDebugValue = useDebugValue;
           exports.useDeferredValue = useDeferredValue;
-          exports.useEffect = useEffect20;
+          exports.useEffect = useEffect22;
           exports.useId = useId2;
           exports.useImperativeHandle = useImperativeHandle;
           exports.useInsertionEffect = useInsertionEffect2;
           exports.useLayoutEffect = useLayoutEffect6;
-          exports.useMemo = useMemo7;
+          exports.useMemo = useMemo8;
           exports.useReducer = useReducer3;
-          exports.useRef = useRef15;
-          exports.useState = useState19;
+          exports.useRef = useRef17;
+          exports.useState = useState21;
           exports.useSyncExternalStore = useSyncExternalStore2;
           exports.useTransition = useTransition;
           exports.version = ReactVersion;
@@ -2384,9 +2384,9 @@
           if (typeof __REACT_DEVTOOLS_GLOBAL_HOOK__ !== "undefined" && typeof __REACT_DEVTOOLS_GLOBAL_HOOK__.registerInternalModuleStart === "function") {
             __REACT_DEVTOOLS_GLOBAL_HOOK__.registerInternalModuleStart(new Error());
           }
-          var React46 = require_react();
+          var React48 = require_react();
           var Scheduler = require_scheduler();
-          var ReactSharedInternals = React46.__SECRET_INTERNALS_DO_NOT_USE_OR_YOU_WILL_BE_FIRED;
+          var ReactSharedInternals = React48.__SECRET_INTERNALS_DO_NOT_USE_OR_YOU_WILL_BE_FIRED;
           var suppressWarning = false;
           function setSuppressWarning(newSuppressWarning) {
             {
@@ -3991,7 +3991,7 @@
             {
               if (props.value == null) {
                 if (typeof props.children === "object" && props.children !== null) {
-                  React46.Children.forEach(props.children, function(child) {
+                  React48.Children.forEach(props.children, function(child) {
                     if (child == null) {
                       return;
                     }
@@ -23560,7 +23560,7 @@
       if (true) {
         (function() {
           "use strict";
-          var React46 = require_react();
+          var React48 = require_react();
           var REACT_ELEMENT_TYPE = Symbol.for("react.element");
           var REACT_PORTAL_TYPE = Symbol.for("react.portal");
           var REACT_FRAGMENT_TYPE = Symbol.for("react.fragment");
@@ -23586,7 +23586,7 @@
             }
             return null;
           }
-          var ReactSharedInternals = React46.__SECRET_INTERNALS_DO_NOT_USE_OR_YOU_WILL_BE_FIRED;
+          var ReactSharedInternals = React48.__SECRET_INTERNALS_DO_NOT_USE_OR_YOU_WILL_BE_FIRED;
           function error(format) {
             {
               {
@@ -24436,11 +24436,11 @@
               return jsxWithValidation(type, props, key, false);
             }
           }
-          var jsx28 = jsxWithValidationDynamic;
-          var jsxs6 = jsxWithValidationStatic;
+          var jsx30 = jsxWithValidationDynamic;
+          var jsxs8 = jsxWithValidationStatic;
           exports.Fragment = REACT_FRAGMENT_TYPE;
-          exports.jsx = jsx28;
-          exports.jsxs = jsxs6;
+          exports.jsx = jsx30;
+          exports.jsxs = jsxs8;
         })();
       }
     }
@@ -24462,9 +24462,9 @@
   var import_client = __toESM(require_client());
 
   // src/renderer/App.tsx
-  var import_react6 = __toESM(require_react());
+  var import_react8 = __toESM(require_react());
 
-  // src/renderer/components/CommandPalette.tsx
+  // src/renderer/components/widgets/CommandPalette.tsx
   var import_react4 = __toESM(require_react());
 
   // src/renderer/components/ui/button.tsx
@@ -29838,6 +29838,13 @@ For more information, see https://radix-ui.com/primitives/docs/components/${titl
     ["path", { d: "M2 12h20", key: "9i4pu4" }]
   ]);
 
+  // node_modules/lucide-react/dist/esm/icons/image.js
+  var Image = createLucideIcon("Image", [
+    ["rect", { width: "18", height: "18", x: "3", y: "3", rx: "2", ry: "2", key: "1m3agn" }],
+    ["circle", { cx: "9", cy: "9", r: "2", key: "af1f0g" }],
+    ["path", { d: "m21 15-3.086-3.086a2 2 0 0 0-2.828 0L6 21", key: "1xmnt7" }]
+  ]);
+
   // node_modules/lucide-react/dist/esm/icons/languages.js
   var Languages = createLucideIcon("Languages", [
     ["path", { d: "m5 8 6 6", key: "1wu5hv" }],
@@ -29909,7 +29916,7 @@ For more information, see https://radix-ui.com/primitives/docs/components/${titl
       {
         ref,
         className: cn(
-          "fixed left-[50%] top-[50%] z-50 grid w-full max-w-lg translate-x-[-50%] translate-y-[-50%] gap-4 border bg-background p-6 shadow-lg duration-200 data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95 data-[state=closed]:slide-out-to-left-1/2 data-[state=closed]:slide-out-to-top-[48%] data-[state=open]:slide-in-from-left-1/2 data-[state=open]:slide-in-from-top-[48%] sm:rounded-lg",
+          "fixed left-[50%] top-[50%] z-50 grid w-full max-w-lg translate-x-[-50%] translate-y-[-50%] gap-4 border bg-background p-6 duration-200 data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95 data-[state=closed]:slide-out-to-left-1/2 data-[state=closed]:slide-out-to-top-[48%] data-[state=open]:slide-in-from-left-1/2 data-[state=open]:slide-in-from-top-[48%] sm:rounded-lg",
           className
         ),
         ...props,
@@ -29981,7 +29988,7 @@ For more information, see https://radix-ui.com/primitives/docs/components/${titl
     {
       ref,
       className: cn(
-        "flex h-full body p-2 w-full flex-col overflow-hidden border-ink-400 rounded-lg bg-popover text-popover-foreground",
+        "flex h-full body p-2 w-full flex-col overflow-hidden rounded-lg bg-popover text-popover-foreground",
         className
       ),
       ...props
@@ -30044,7 +30051,7 @@ For more information, see https://radix-ui.com/primitives/docs/components/${titl
     {
       ref,
       className: cn(
-        "relative flex cursor-default gap-3 select-none items-center rounded-lg px-4 py-1 font-light outline-none data-[disabled=true]:pointer-events-none data-[selected=true]:bg-ink-200 data-[selected=true]:text-ink-1000 data-[disabled=true]:opacity-50 [&_svg]:pointer-events-none [&_svg]:size-4 [&_svg]:shrink-0 [&_svg]:text-ink-800",
+        "relative flex cursor-default gap-3 select-none items-center rounded-lg px-4 py-1 font-light outline-none data-[disabled=true]:pointer-events-none data-[selected=true]:bg-ink-200 data-[selected=true]:text-ink-1000 data-[disabled=true]:opacity-50 [&_svg]:pointer-events-none [&_svg]:size-4 [&_svg]:shrink-0 [&_svg]:text-ink-800 focus:outline-none focus-visible:outline-none focus:ring-0 focus-visible:ring-0",
         className
       ),
       ...props
@@ -32687,7 +32694,7 @@ For more information, see https://radix-ui.com/primitives/docs/components/${titl
       align,
       sideOffset,
       className: cn(
-        "z-[9999] w-72 rounded-xl border border-ink-400 bg-popover p-4 text-popover-foreground outline-none shadow-lg data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95 data-[side=bottom]:slide-in-from-top-2 data-[side=left]:slide-in-from-right-2 data-[side=right]:slide-in-from-left-2 data-[side=top]:slide-in-from-bottom-2 origin-[--radix-popover-content-transform-origin]",
+        "z-[9999] w-72 rounded-xl border border-ink-400 bg-popover p-4 text-popover-foreground outline-none data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95 data-[side=bottom]:slide-in-from-top-2 data-[side=left]:slide-in-from-right-2 data-[side=right]:slide-in-from-left-2 data-[side=top]:slide-in-from-bottom-2 origin-[--radix-popover-content-transform-origin]",
         className
       ),
       ...props
@@ -32695,7 +32702,7 @@ For more information, see https://radix-ui.com/primitives/docs/components/${titl
   ) }));
   PopoverContent2.displayName = Content22.displayName;
 
-  // src/renderer/components/CommandPalette.tsx
+  // src/renderer/components/widgets/CommandPalette.tsx
   var import_jsx_runtime18 = __toESM(require_jsx_runtime());
   var getIcon = (label, type) => {
     const lower = label.toLowerCase();
@@ -32728,17 +32735,28 @@ For more information, see https://radix-ui.com/primitives/docs/components/${titl
     const [selectedActionId, setSelectedActionId] = (0, import_react4.useState)(null);
     const [popoverOpen, setPopoverOpen] = (0, import_react4.useState)(false);
     const [popoverContent, setPopoverContent] = (0, import_react4.useState)("");
+    const [popoverIsError, setPopoverIsError] = (0, import_react4.useState)(false);
     const [popoverAnchor, setPopoverAnchor] = (0, import_react4.useState)(null);
+    const [isNearRightEdge, setIsNearRightEdge] = (0, import_react4.useState)(false);
     const inputRef = (0, import_react4.useRef)(null);
     const actionRefs = (0, import_react4.useRef)({});
+    const debounceTimerRef = (0, import_react4.useRef)(null);
     (0, import_react4.useEffect)(() => {
       if (!open)
         return;
       let lastIgnoreState = null;
       const handleMouseMove = (e) => {
         const paletteWidth = 270;
-        const isOverPalette = e.clientX <= paletteWidth;
-        const isOverPopover = popoverOpen && e.clientX >= 280 && e.clientX <= 550;
+        let isOverPalette = e.clientX <= paletteWidth;
+        let isOverPopover = false;
+        if (popoverOpen) {
+          if (isNearRightEdge) {
+            isOverPopover = e.clientX >= -250 && e.clientX < 0;
+            isOverPalette = isOverPalette || isOverPopover;
+          } else {
+            isOverPopover = e.clientX >= 280 && e.clientX <= 550;
+          }
+        }
         const shouldIgnore = !isOverPalette && !isOverPopover;
         if (shouldIgnore !== lastIgnoreState) {
           console.log("Mouse at:", e.clientX, "shouldIgnore:", shouldIgnore);
@@ -32764,10 +32782,25 @@ For more information, see https://radix-ui.com/primitives/docs/components/${titl
       loadWidgets();
     }, []);
     (0, import_react4.useEffect)(() => {
-      const onShow = (_event, data) => {
+      const onShow = async (_event, data) => {
         setOpen(true);
         setSelectedActionId(null);
         setPopoverOpen(false);
+        if (window.electronAPI?.getWindowPosition) {
+          try {
+            const { windowX, screenWidth } = await window.electronAPI.getWindowPosition();
+            const paletteWidth = 270;
+            const popoverWidth = 250;
+            const margin = 20;
+            const totalWidth = paletteWidth + popoverWidth + margin;
+            const wouldClip = windowX + totalWidth > screenWidth;
+            setIsNearRightEdge(wouldClip);
+            console.log("Popover positioning:", { windowX, screenWidth, wouldClip, side: wouldClip ? "left" : "right" });
+          } catch (error) {
+            console.error("Error getting window position:", error);
+            setIsNearRightEdge(false);
+          }
+        }
         if (data?.capturedText)
           setCapturedText(data.capturedText);
         else
@@ -32777,28 +32810,36 @@ For more information, see https://radix-ui.com/primitives/docs/components/${titl
     }, []);
     (0, import_react4.useEffect)(() => {
       let active = true;
-      const fetchSuggestions = async () => {
+      if (debounceTimerRef.current) {
+        clearTimeout(debounceTimerRef.current);
+      }
+      debounceTimerRef.current = setTimeout(async () => {
         const res = await window.electronAPI.getSuggestions(query || "");
         if (active)
           setSuggestions(res);
-      };
-      fetchSuggestions();
+      }, query ? 150 : 0);
       return () => {
         active = false;
+        if (debounceTimerRef.current) {
+          clearTimeout(debounceTimerRef.current);
+        }
       };
     }, [query]);
-    async function handleOpenWidget(widgetId) {
+    const handleOpenWidget = (0, import_react4.useCallback)(async (widgetId) => {
       try {
         const text = capturedText || await window.electronAPI.getCapturedText();
         const res = await window.electronAPI.openWidget(widgetId, { selectedText: text });
         if (res?.success !== false) {
           setOpen(false);
+          if (window.electronAPI?.hideCurrentWindow) {
+            await window.electronAPI.hideCurrentWindow();
+          }
         }
       } catch (error) {
         console.error("Error opening widget:", error);
       }
-    }
-    async function handleExecuteAction(actionId, triggerElement) {
+    }, [capturedText]);
+    const handleExecuteAction = (0, import_react4.useCallback)(async (actionId, triggerElement) => {
       console.log("=== handleExecuteAction START ===");
       console.log("actionId:", actionId);
       console.log("triggerElement:", triggerElement);
@@ -32811,39 +32852,69 @@ For more information, see https://radix-ui.com/primitives/docs/components/${titl
           return;
         }
         const res = await window.electronAPI.executeAction(actionId, text);
-        console.log("Raw action result:", res);
+        console.log("=== RAW ACTION RESULT ===");
+        console.log("Type:", typeof res);
+        console.log("Full object:", res);
+        console.log("res.success:", res?.success);
+        console.log("res.result:", res?.result);
+        console.log("res.result type:", typeof res?.result);
+        if (res?.result) {
+          console.log("res.result.translatedText:", res.result.translatedText);
+          console.log("res.result.detectedSourceLanguage:", res.result.detectedSourceLanguage);
+        }
         let resultText = "";
+        let isError = false;
         if (res && typeof res === "object") {
           if (res.success === true && res.result) {
-            if (res.result.translatedText) {
+            console.log("Success branch - res.result:", res.result);
+            if (typeof res.result === "object" && res.result.translatedText) {
               resultText = res.result.translatedText;
+              isError = false;
+              console.log("\u2713 Extracted translation:", resultText);
+            } else if (typeof res.result === "object" && "success" in res.result) {
+              console.log("Double-wrapped result detected");
+              if (res.result.success === true && res.result.result) {
+                resultText = typeof res.result.result === "string" ? res.result.result : String(res.result.result);
+                isError = false;
+              } else if (res.result.success === false) {
+                resultText = res.result.error || "Unknown error";
+                isError = true;
+              } else {
+                resultText = "Unexpected response format";
+                isError = true;
+              }
             } else if (typeof res.result === "string") {
+              console.log("String result:", res.result);
               resultText = res.result;
-            } else if (res.result.success === false) {
-              resultText = `Error: ${res.result.error || "Unknown error"}`;
+              isError = false;
             } else {
-              resultText = JSON.stringify(res.result);
+              console.log("Other object type, trying to extract text");
+              if (res.result.text) {
+                resultText = res.result.text;
+              } else if (res.result.value) {
+                resultText = res.result.value;
+              } else {
+                console.warn("Could not find text/value property, stringifying:", res.result);
+                resultText = JSON.stringify(res.result, null, 2);
+              }
+              isError = false;
             }
           } else if (res.success === false) {
-            resultText = `Error: ${res.error || "Unknown error"}`;
-          } else if (res.result) {
-            if (res.result.success === false) {
-              resultText = `Error: ${res.result.error || "Unknown error"}`;
-            } else if (res.result.translatedText) {
-              resultText = res.result.translatedText;
-            } else {
-              resultText = JSON.stringify(res.result);
-            }
-          } else if (res.error) {
-            resultText = `Error: ${res.error}`;
+            resultText = res.error || "Unknown error";
+            isError = true;
           } else {
-            resultText = JSON.stringify(res);
+            console.error("Unexpected response format:", res);
+            resultText = "Unexpected response format";
+            isError = true;
           }
         } else {
+          console.log("Non-object result:", res);
           resultText = typeof res === "string" ? res : String(res);
+          isError = false;
         }
-        console.log("Final resultText:", resultText);
+        console.log("Final resultText:", resultText, "isError:", isError);
         setPopoverContent(resultText);
+        setPopoverIsError(isError);
         setPopoverAnchor(triggerElement);
         setPopoverOpen(true);
         console.log("Popover opened!");
@@ -32858,18 +32929,19 @@ For more information, see https://radix-ui.com/primitives/docs/components/${titl
         setPopoverAnchor(triggerElement);
         setPopoverOpen(true);
       }
-    }
-    const suggestedItems = suggestions.slice(0, 4);
-    const suggestedIds = new Set(suggestedItems.map((s) => s.id));
-    const actionItems = suggestions.filter(
-      (s) => s.type === "action" && !suggestedIds.has(s.id)
+    }, [capturedText, popoverOpen, selectedActionId, isNearRightEdge]);
+    const suggestedItems = (0, import_react4.useMemo)(() => suggestions.slice(0, 4), [suggestions]);
+    const suggestedIds = (0, import_react4.useMemo)(() => new Set(suggestedItems.map((s) => s.id)), [suggestedItems]);
+    const actionItems = (0, import_react4.useMemo)(
+      () => suggestions.filter((s) => s.type === "action" && !suggestedIds.has(s.id)),
+      [suggestions, suggestedIds]
     );
-    const widgetItems = widgets.filter(
-      (w) => !suggestedIds.has(w.id)
+    const widgetItems = (0, import_react4.useMemo)(
+      () => widgets.filter((w) => !suggestedIds.has(w.id)),
+      [widgets, suggestedIds]
     );
     if (!open)
       return null;
-    const isError = popoverContent?.startsWith("Error:");
     return /* @__PURE__ */ (0, import_jsx_runtime18.jsx)(
       "div",
       {
@@ -32946,11 +33018,11 @@ For more information, see https://radix-ui.com/primitives/docs/components/${titl
                         /* @__PURE__ */ (0, import_jsx_runtime18.jsx)(
                           PopoverContent2,
                           {
-                            side: "right",
+                            side: isNearRightEdge ? "left" : "right",
                             align: "center",
-                            className: `w-auto max-w-[250px] ${isError ? "border-red-500 bg-red-50" : ""}`,
+                            className: `w-auto max-w-[250px] ${popoverIsError ? "border-red-500 bg-red-50" : ""}`,
                             style: { pointerEvents: "auto" },
-                            children: /* @__PURE__ */ (0, import_jsx_runtime18.jsx)("div", { className: `body text-sm ${isError ? "text-red-600" : ""}`, children: popoverContent })
+                            children: /* @__PURE__ */ (0, import_jsx_runtime18.jsx)("div", { className: `body text-sm ${popoverIsError ? "text-red-600" : ""}`, children: popoverContent })
                           }
                         )
                       ] }, s.id);
@@ -33002,11 +33074,11 @@ For more information, see https://radix-ui.com/primitives/docs/components/${titl
                     /* @__PURE__ */ (0, import_jsx_runtime18.jsx)(
                       PopoverContent2,
                       {
-                        side: "right",
+                        side: isNearRightEdge ? "left" : "right",
                         align: "center",
-                        className: `w-auto max-w-[250px] ${isError ? "border-red-500 bg-red-50" : ""}`,
+                        className: `w-auto max-w-[250px] ${popoverIsError ? "border-red-500 bg-red-50" : ""}`,
                         style: { pointerEvents: "auto" },
-                        children: /* @__PURE__ */ (0, import_jsx_runtime18.jsx)("div", { className: `body text-sm ${isError ? "text-red-600" : ""}`, children: popoverContent })
+                        children: /* @__PURE__ */ (0, import_jsx_runtime18.jsx)("div", { className: `body text-sm ${popoverIsError ? "text-red-600" : ""}`, children: popoverContent })
                       }
                     )
                   ] }, a.id))
@@ -33020,7 +33092,7 @@ For more information, see https://radix-ui.com/primitives/docs/components/${titl
     );
   }
 
-  // src/renderer/components/TranslatorWidget.tsx
+  // src/renderer/components/widgets/Translator.tsx
   var import_react5 = __toESM(require_react());
 
   // src/renderer/components/ui/card.tsx
@@ -33031,7 +33103,7 @@ For more information, see https://radix-ui.com/primitives/docs/components/${titl
     {
       ref,
       className: cn(
-        "rounded-lg border bg-card text-card-foreground shadow-sm",
+        "rounded-lg border bg-card text-card-foreground",
         className
       ),
       ...props
@@ -33194,23 +33266,27 @@ For more information, see https://radix-ui.com/primitives/docs/components/${titl
     value,
     onChange,
     items,
-    placeholder = "Select language",
-    className
+    placeholder = "Select...",
+    className,
+    searchPlaceholder = "Search...",
+    disabled = false
   }) {
     const [open, setOpen] = React43.useState(false);
-    return /* @__PURE__ */ (0, import_jsx_runtime24.jsxs)(Popover2, { open, onOpenChange: setOpen, children: [
+    return /* @__PURE__ */ (0, import_jsx_runtime24.jsxs)(Popover2, { open: open && !disabled, onOpenChange: setOpen, children: [
       /* @__PURE__ */ (0, import_jsx_runtime24.jsx)(PopoverTrigger2, { asChild: true, children: /* @__PURE__ */ (0, import_jsx_runtime24.jsxs)(
         Button,
         {
           variant: "default",
           role: "combobox",
           "aria-expanded": open,
+          disabled,
           className: cn(
-            // 🔥 Black pill button styling
+            // Black pill button styling
             "w-fit min-w-[120px] justify-between rounded-full px-4 py-1 h-7",
             "bg-ink-900 text-ink-0 border-none shadow-none",
             "hover:bg-ink-800 hover:text-ink-0",
             "font-normal tracking-normal",
+            disabled && "opacity-70 cursor-not-allowed",
             className
           ),
           children: [
@@ -33225,9 +33301,9 @@ For more information, see https://radix-ui.com/primitives/docs/components/${titl
           className: "w-[200px] p-0 rounded-lg border-ink-300 bg-white",
           align: "start",
           children: /* @__PURE__ */ (0, import_jsx_runtime24.jsxs)(Command, { children: [
-            /* @__PURE__ */ (0, import_jsx_runtime24.jsx)(CommandInput, { placeholder: `Search...`, className: "h-9" }),
+            /* @__PURE__ */ (0, import_jsx_runtime24.jsx)(CommandInput, { placeholder: searchPlaceholder, className: "h-9" }),
             /* @__PURE__ */ (0, import_jsx_runtime24.jsx)(CommandEmpty, { children: "No results." }),
-            /* @__PURE__ */ (0, import_jsx_runtime24.jsx)(CommandGroup, { children: items.map((item) => /* @__PURE__ */ (0, import_jsx_runtime24.jsxs)(
+            /* @__PURE__ */ (0, import_jsx_runtime24.jsx)(CommandGroup, { className: "max-h-[200px] overflow-auto", children: items.map((item) => /* @__PURE__ */ (0, import_jsx_runtime24.jsxs)(
               CommandItem,
               {
                 value: item,
@@ -33257,21 +33333,63 @@ For more information, see https://radix-ui.com/primitives/docs/components/${titl
     ] });
   }
 
-  // src/renderer/components/TranslatorWidget.tsx
+  // src/renderer/components/widgets/Translator.tsx
   var import_jsx_runtime25 = __toESM(require_jsx_runtime());
   var LANGUAGE_NAMES = {
-    it: "italian",
     en: "english",
+    zh: "chinese (mandarin)",
+    es: "spanish",
     fr: "french",
     de: "german",
-    es: "spanish"
+    ar: "arabic",
+    pt: "portuguese",
+    ru: "russian",
+    ja: "japanese",
+    hi: "hindi",
+    it: "italian",
+    nl: "dutch",
+    pl: "polish",
+    tr: "turkish",
+    hy: "armenian",
+    fa: "persian",
+    vi: "vietnamese",
+    id: "indonesian",
+    ko: "korean",
+    bn: "bengali",
+    ur: "urdu",
+    th: "thai",
+    sv: "swedish",
+    da: "danish",
+    fi: "finnish",
+    hu: "hungarian"
   };
   var LANGUAGE_CODES = {
-    italian: "it",
     english: "en",
+    "chinese (mandarin)": "zh",
+    spanish: "es",
     french: "fr",
     german: "de",
-    spanish: "es"
+    arabic: "ar",
+    portuguese: "pt",
+    russian: "ru",
+    japanese: "ja",
+    hindi: "hi",
+    italian: "it",
+    dutch: "nl",
+    polish: "pl",
+    turkish: "tr",
+    armenian: "hy",
+    persian: "fa",
+    vietnamese: "vi",
+    indonesian: "id",
+    korean: "ko",
+    bengali: "bn",
+    urdu: "ur",
+    thai: "th",
+    swedish: "sv",
+    danish: "da",
+    finnish: "fi",
+    hungarian: "hu"
   };
   function TranslatorWidget(props) {
     const [input, setInput] = (0, import_react5.useState)("");
@@ -33310,10 +33428,16 @@ For more information, see https://radix-ui.com/primitives/docs/components/${titl
       setLoading(true);
       try {
         const res = await window.electronAPI.executeAction(`translate-${tgt}`, text);
+        console.log("[TranslatorWidget] Translation response:", res);
+        console.log("[TranslatorWidget] res.success:", res.success);
+        console.log("[TranslatorWidget] res.result:", res.result);
         if (res.success) {
+          console.log("[TranslatorWidget] Translated text:", res.result.translatedText);
+          console.log("[TranslatorWidget] Detected language:", res.result.detectedSourceLanguage);
           setTranslated(res.result.translatedText || "");
           if (res.result.detectedSourceLanguage) {
             const detected = LANGUAGE_NAMES[res.result.detectedSourceLanguage];
+            console.log("[TranslatorWidget] Detected language name:", detected);
             if (detected)
               setSourceLang(detected);
           }
@@ -33321,6 +33445,7 @@ For more information, see https://radix-ui.com/primitives/docs/components/${titl
           setTranslated(`Error: ${res.error}`);
         }
       } catch (err) {
+        console.error("[TranslatorWidget] Error:", err);
         setTranslated(String(err));
       } finally {
         setLoading(false);
@@ -33336,7 +33461,8 @@ For more information, see https://radix-ui.com/primitives/docs/components/${titl
             value: sourceLang,
             onChange: setSourceLang,
             items: Object.values(LANGUAGE_NAMES),
-            placeholder: "Select language",
+            placeholder: "Detecting...",
+            searchPlaceholder: "Search languages...",
             className: "w-[160px]"
           }
         ),
@@ -33347,7 +33473,7 @@ For more information, see https://radix-ui.com/primitives/docs/components/${titl
             value: input,
             onChange: (e) => setInput(e.target.value),
             placeholder: "Enter text to translate...",
-            className: "bg-transparent border-none shadow-none resize-none p-0 text-sm"
+            className: "bg-transparent border-none resize-none p-0 text-sm"
           }
         )
       ] }),
@@ -33359,6 +33485,7 @@ For more information, see https://radix-ui.com/primitives/docs/components/${titl
             onChange: setTargetLang,
             items: Object.values(LANGUAGE_NAMES),
             placeholder: "Select language",
+            searchPlaceholder: "Search languages...",
             className: "w-[160px]"
           }
         ),
@@ -33370,17 +33497,398 @@ For more information, see https://radix-ui.com/primitives/docs/components/${titl
     ] });
   }
 
-  // src/renderer/App.tsx
+  // src/renderer/components/widgets/CurrencyConverter.tsx
+  var import_react6 = __toESM(require_react());
   var import_jsx_runtime26 = __toESM(require_jsx_runtime());
-  function App() {
-    const [componentType, setComponentType] = (0, import_react6.useState)("palette");
-    const [componentProps, setComponentProps] = (0, import_react6.useState)({});
+  var CURRENCIES = {
+    USD: "US Dollar ($)",
+    EUR: "Euro (\u20AC)",
+    GBP: "British Pound (\xA3)",
+    JPY: "Japanese Yen (\xA5)",
+    AUD: "Australian Dollar (A$)",
+    CAD: "Canadian Dollar (C$)",
+    CHF: "Swiss Franc (CHF)",
+    CNY: "Chinese Yuan (\xA5)",
+    INR: "Indian Rupee (\u20B9)",
+    MXN: "Mexican Peso ($)",
+    KRW: "South Korean Won (\u20A9)"
+  };
+  function parseAmountFromText(text) {
+    if (!text || !text.trim())
+      return null;
+    const currencyPatterns = [
+      /\$|USD/i,
+      /€|EUR/i,
+      /£|GBP/i,
+      /¥|JPY/i,
+      /A\$|AUD/i,
+      /C\$|CAD/i,
+      /CHF/i,
+      /CNY|RMB/i,
+      /₹|INR/i,
+      /MXN/i,
+      /₩|KRW/i
+    ];
+    let cleanText = text;
+    for (const pattern of currencyPatterns) {
+      cleanText = cleanText.replace(pattern, "");
+    }
+    cleanText = cleanText.replace(/,/g, "").replace(/\s+/g, "");
+    const amount = parseFloat(cleanText);
+    return isNaN(amount) ? null : amount;
+  }
+  function CurrencyConverterWidget(props) {
+    const [amount, setAmount] = (0, import_react6.useState)("");
+    const [fromCurrency, setFromCurrency] = (0, import_react6.useState)("USD");
+    const [toCurrency, setToCurrency] = (0, import_react6.useState)("EUR");
+    const [result, setResult] = (0, import_react6.useState)(null);
+    const [rate, setRate] = (0, import_react6.useState)(null);
+    const [loading, setLoading] = (0, import_react6.useState)(false);
+    const [error, setError] = (0, import_react6.useState)("");
+    const containerRef = (0, import_react6.useRef)(null);
     (0, import_react6.useEffect)(() => {
+      console.log("CurrencyConverter: Initializing from props", {
+        detectedAmount: props?.detectedAmount,
+        detectedCurrency: props?.detectedCurrency,
+        selectedText: props?.selectedText
+      });
+      if (props?.detectedAmount !== void 0 && props?.detectedAmount !== null) {
+        console.log("CurrencyConverter: Setting amount from detectedAmount:", props.detectedAmount);
+        setAmount(String(props.detectedAmount));
+      } else if (props?.selectedText) {
+        console.log("CurrencyConverter: Parsing amount from selectedText:", props.selectedText);
+        const parsedAmount = parseAmountFromText(props.selectedText);
+        if (parsedAmount !== null) {
+          setAmount(String(parsedAmount));
+        }
+      }
+      const initializeCurrencies = async () => {
+        try {
+          let defaultFrom = "USD";
+          let defaultTo = "EUR";
+          if (window.electronAPI?.getCurrencySettings) {
+            const settings = await window.electronAPI.getCurrencySettings();
+            defaultFrom = settings.defaultFrom || "USD";
+            defaultTo = settings.defaultTo || "EUR";
+          }
+          if (props?.detectedCurrency) {
+            console.log("CurrencyConverter: Setting fromCurrency from detectedCurrency:", props.detectedCurrency);
+            setFromCurrency(props.detectedCurrency);
+          } else {
+            setFromCurrency(defaultFrom);
+          }
+          setToCurrency(defaultTo);
+        } catch (err) {
+          console.error("Error initializing currency converter:", err);
+        }
+      };
+      initializeCurrencies();
+    }, [props?.detectedAmount, props?.detectedCurrency, props?.selectedText]);
+    (0, import_react6.useEffect)(() => {
+      const timeout = setTimeout(() => {
+        const numAmount = parseFloat(amount);
+        if (!amount.trim() || isNaN(numAmount)) {
+          setResult(null);
+          setRate(null);
+          setError("");
+          return;
+        }
+        if (fromCurrency === toCurrency) {
+          setResult(numAmount);
+          setRate(1);
+          setError("");
+          return;
+        }
+        convertCurrency(fromCurrency, toCurrency, numAmount);
+      }, 500);
+      return () => clearTimeout(timeout);
+    }, [amount, fromCurrency, toCurrency]);
+    (0, import_react6.useEffect)(() => {
+      if (window.electronAPI?.saveCurrencySettings) {
+        window.electronAPI.saveCurrencySettings({
+          defaultFrom: fromCurrency,
+          defaultTo: toCurrency
+        }).catch((err) => console.error("Error saving settings:", err));
+      }
+    }, [fromCurrency, toCurrency]);
+    (0, import_react6.useEffect)(() => {
+      if (!containerRef.current)
+        return;
+      const resizeWindow = () => {
+        if (containerRef.current && window.electronAPI?.resizeWindow) {
+          const height = containerRef.current.scrollHeight;
+          const newHeight = Math.max(height + 40, 200);
+          console.log("CurrencyConverter: Resizing window", {
+            scrollHeight: height,
+            newHeight,
+            currentAmount: amount,
+            hasResult: result !== null
+          });
+          window.electronAPI.resizeWindow(newHeight);
+        }
+      };
+      const timeoutId = setTimeout(resizeWindow, 150);
+      const resizeObserver = new ResizeObserver(() => {
+        console.log("CurrencyConverter: ResizeObserver triggered");
+        resizeWindow();
+      });
+      resizeObserver.observe(containerRef.current);
+      return () => {
+        clearTimeout(timeoutId);
+        resizeObserver.disconnect();
+      };
+    }, [amount, result, loading, error]);
+    async function convertCurrency(from, to, amt) {
+      setLoading(true);
+      setError("");
+      try {
+        const res = await window.electronAPI.convertCurrency({
+          from,
+          to,
+          amount: amt
+        });
+        if (res.success) {
+          setResult(res.result);
+          setRate(res.rate);
+        } else {
+          setError(res.error || "Conversion failed");
+          setResult(null);
+          setRate(null);
+        }
+      } catch (err) {
+        setError(String(err));
+        setResult(null);
+        setRate(null);
+      } finally {
+        setLoading(false);
+      }
+    }
+    function swapCurrencies() {
+      setFromCurrency(toCurrency);
+      setToCurrency(fromCurrency);
+    }
+    return /* @__PURE__ */ (0, import_jsx_runtime26.jsxs)(
+      Card,
+      {
+        ref: containerRef,
+        className: "w-full bg-ink-0 border border-ink-400 rounded-xl p-4 flex flex-col gap-4",
+        children: [
+          /* @__PURE__ */ (0, import_jsx_runtime26.jsx)("div", { className: "flex items-center gap-2", children: /* @__PURE__ */ (0, import_jsx_runtime26.jsxs)("h2", { className: "font-serif italic text-[20px] leading-7 text-ink-1000", children: [
+            "currency ",
+            /* @__PURE__ */ (0, import_jsx_runtime26.jsx)("span", { className: "not-italic", children: " " }),
+            " converter"
+          ] }) }),
+          /* @__PURE__ */ (0, import_jsx_runtime26.jsx)(Separator2, { className: "bg-ink-200" }),
+          /* @__PURE__ */ (0, import_jsx_runtime26.jsxs)(
+            "div",
+            {
+              className: "flex items-center gap-3 w-full bg-ink-0 border border-ink-400 rounded-lg \n        px-2 py-2",
+              children: [
+                /* @__PURE__ */ (0, import_jsx_runtime26.jsx)(
+                  "div",
+                  {
+                    className: "px-2 py-1 bg-ink-1000 text-ink-0 rounded-md border border-ink-400\n          flex items-center gap-1 text-sm font-normal",
+                    children: /* @__PURE__ */ (0, import_jsx_runtime26.jsx)(
+                      Combobox,
+                      {
+                        value: CURRENCIES[fromCurrency],
+                        onChange: (val) => {
+                          const code = Object.keys(CURRENCIES).find((k3) => CURRENCIES[k3] === val);
+                          if (code)
+                            setFromCurrency(code);
+                        },
+                        items: Object.values(CURRENCIES),
+                        placeholder: "Select currency",
+                        className: "w-[120px] text-ink-0"
+                      }
+                    )
+                  }
+                ),
+                /* @__PURE__ */ (0, import_jsx_runtime26.jsx)(
+                  "input",
+                  {
+                    type: "text",
+                    value: amount,
+                    onChange: (e) => setAmount(e.target.value),
+                    className: "flex-1 text-right bg-transparent border-none outline-none\n          text-[14px] font-normal text-ink-1000",
+                    placeholder: "0.00"
+                  }
+                )
+              ]
+            }
+          ),
+          /* @__PURE__ */ (0, import_jsx_runtime26.jsxs)(
+            "div",
+            {
+              className: "flex items-center gap-3 w-full border border-ink-400 rounded-lg \n        px-2 py-2",
+              children: [
+                /* @__PURE__ */ (0, import_jsx_runtime26.jsx)(
+                  "div",
+                  {
+                    className: "px-2 py-1 bg-ink-1000 text-ink-0 rounded-md border border-ink-400\n          flex items-center gap-1 text-sm font-normal",
+                    children: /* @__PURE__ */ (0, import_jsx_runtime26.jsx)(
+                      Combobox,
+                      {
+                        value: CURRENCIES[toCurrency],
+                        onChange: (val) => {
+                          const code = Object.keys(CURRENCIES).find((k3) => CURRENCIES[k3] === val);
+                          if (code)
+                            setToCurrency(code);
+                        },
+                        items: Object.values(CURRENCIES),
+                        placeholder: "Select currency",
+                        className: "w-[120px] text-ink-0"
+                      }
+                    )
+                  }
+                ),
+                /* @__PURE__ */ (0, import_jsx_runtime26.jsx)(
+                  "input",
+                  {
+                    type: "text",
+                    value: result !== null ? result.toFixed(2) : "",
+                    onChange: (e) => {
+                      const v = e.target.value;
+                      if (!v.trim() || isNaN(parseFloat(v))) {
+                        setResult(null);
+                        return;
+                      }
+                      const num = parseFloat(v);
+                      if (rate) {
+                        setAmount((num / rate).toString());
+                      }
+                    },
+                    className: "flex-1 text-right bg-transparent border-none outline-none\n          text-[14px] font-normal text-ink-1000",
+                    placeholder: "0.00"
+                  }
+                )
+              ]
+            }
+          ),
+          /* @__PURE__ */ (0, import_jsx_runtime26.jsx)(Separator2, { className: "bg-ink-200" }),
+          /* @__PURE__ */ (0, import_jsx_runtime26.jsx)("div", { className: "text-right text-ink-700 font-serif italic text-[20px] leading-7", children: "by nullab" })
+        ]
+      }
+    );
+  }
+
+  // src/renderer/components/widgets/ClipboardHistory.tsx
+  var import_react7 = __toESM(require_react());
+  var import_jsx_runtime27 = __toESM(require_jsx_runtime());
+  function ClipboardHistoryWidget({ items: initialItems }) {
+    const [items, setItems] = (0, import_react7.useState)(initialItems || []);
+    const commandRef = (0, import_react7.useRef)(null);
+    (0, import_react7.useEffect)(() => {
+      const onInit = (_event, data) => {
+        if (data.type === "clipboard-history" && data.props?.items) {
+          setItems(data.props.items);
+        }
+      };
+      window.electronAPI.onComponentInit?.(onInit);
+    }, []);
+    (0, import_react7.useEffect)(() => {
+      const timer = setTimeout(() => {
+        if (commandRef.current) {
+          commandRef.current.focus();
+        }
+        const firstFocusable = document.querySelector('input, button, [tabindex="0"]');
+        if (firstFocusable) {
+          firstFocusable.focus();
+        }
+      }, 100);
+      const resizeTimer = setTimeout(() => {
+        if (commandRef.current && window.electronAPI?.resizeWindow) {
+          const container = commandRef.current;
+          const rect = container.getBoundingClientRect();
+          const height = Math.ceil(rect.height);
+          window.electronAPI.resizeWindow(height);
+        }
+      }, 200);
+      return () => {
+        clearTimeout(timer);
+        clearTimeout(resizeTimer);
+      };
+    }, [items]);
+    const handleSelect = async (timestamp) => {
+      try {
+        console.log("Pasting clipboard item:", timestamp);
+        await window.electronAPI.pasteClipboardItem(timestamp.toString());
+      } catch (error) {
+        console.error("Error pasting clipboard item:", error);
+      }
+    };
+    (0, import_react7.useEffect)(() => {
+      const handleKeyDown = (e) => {
+        const num = parseInt(e.key, 10);
+        if (num >= 1 && num <= 5 && items[num - 1]) {
+          e.preventDefault();
+          e.stopPropagation();
+          handleSelect(items[num - 1].timestamp);
+          return;
+        }
+        if (e.key === "Enter") {
+          const selectedElement = document.querySelector('[data-selected="true"]');
+          if (selectedElement) {
+            const timestampAttr = selectedElement.getAttribute("data-timestamp");
+            if (timestampAttr) {
+              e.preventDefault();
+              e.stopPropagation();
+              handleSelect(parseInt(timestampAttr, 10));
+            }
+          }
+        }
+      };
+      window.addEventListener("keydown", handleKeyDown, true);
+      return () => window.removeEventListener("keydown", handleKeyDown, true);
+    }, [items]);
+    if (items.length === 0) {
+      return /* @__PURE__ */ (0, import_jsx_runtime27.jsx)(
+        Command,
+        {
+          ref: commandRef,
+          "data-clipboard-container": true,
+          className: "p-4 text-center text-muted-foreground border-0 outline-none focus:outline-none focus-visible:outline-none focus:ring-0 focus-visible:ring-0",
+          children: "No clipboard history yet"
+        }
+      );
+    }
+    return /* @__PURE__ */ (0, import_jsx_runtime27.jsx)(
+      Command,
+      {
+        ref: commandRef,
+        tabIndex: 0,
+        "data-clipboard-container": true,
+        className: "p-0 m-0 h-auto border-0 outline-none focus:outline-none focus-visible:outline-none focus:ring-0 focus-visible:ring-0",
+        children: /* @__PURE__ */ (0, import_jsx_runtime27.jsx)(CommandList, { className: "overflow-visible", children: /* @__PURE__ */ (0, import_jsx_runtime27.jsx)(CommandGroup, { heading: "Recent Clipboard (1-5)", children: items.map((item, index2) => /* @__PURE__ */ (0, import_jsx_runtime27.jsxs)(
+          CommandItem,
+          {
+            onSelect: () => handleSelect(item.timestamp),
+            className: "cursor-pointer",
+            "data-timestamp": item.timestamp,
+            title: item.text || item.preview,
+            children: [
+              index2 + 1,
+              item.image ? /* @__PURE__ */ (0, import_jsx_runtime27.jsx)(Image, { className: "w-4 h-4 mr-2" }) : /* @__PURE__ */ (0, import_jsx_runtime27.jsx)(Clipboard, { className: "w-4 h-4 mr-2" }),
+              /* @__PURE__ */ (0, import_jsx_runtime27.jsx)("span", { className: "truncate flex-1", children: item.preview })
+            ]
+          },
+          item.timestamp
+        )) }) })
+      }
+    );
+  }
+
+  // src/renderer/App.tsx
+  var import_jsx_runtime28 = __toESM(require_jsx_runtime());
+  function App() {
+    const [componentType, setComponentType] = (0, import_react8.useState)("palette");
+    const [componentProps, setComponentProps] = (0, import_react8.useState)({});
+    (0, import_react8.useEffect)(() => {
       if (window.electronAPI?.onComponentInit) {
         const handler = (_event, data) => {
           console.log("App: component-init received", data);
           const type = data.type;
-          if (type === "palette" || type === "translator") {
+          if (type === "palette" || type === "translator" || type === "currency-converter" || type === "clipboard-history") {
             setComponentType(type);
             setComponentProps(data.props || {});
           }
@@ -33392,6 +33900,8 @@ For more information, see https://radix-ui.com/primitives/docs/components/${titl
         console.log("App: hash changed to", hash);
         if (hash === "#translator") {
           setComponentType("translator");
+        } else if (hash === "#currency-converter") {
+          setComponentType("currency-converter");
         } else {
           setComponentType("palette");
         }
@@ -33419,23 +33929,32 @@ For more information, see https://radix-ui.com/primitives/docs/components/${titl
           }
         });
       }
+      if (window.electronAPI?.onCurrencyConverterInit) {
+        window.electronAPI.onCurrencyConverterInit((_event, data) => {
+          console.log("App: currency-converter-init event received (legacy)");
+          setComponentType("currency-converter");
+          if (data?.conversionRate) {
+            setComponentProps({ conversionRate: data.conversionRate });
+          }
+        });
+      }
       return () => {
         clearTimeout(timeoutId);
         window.removeEventListener("hashchange", handleHashChange);
       };
     }, []);
-    return /* @__PURE__ */ (0, import_jsx_runtime26.jsx)("div", { style: {
+    return /* @__PURE__ */ (0, import_jsx_runtime28.jsx)("div", { style: {
       width: "100vw",
       height: "100vh",
       background: "transparent",
       overflow: "hidden"
-    }, children: componentType === "translator" ? /* @__PURE__ */ (0, import_jsx_runtime26.jsx)(TranslatorWidget, { ...componentProps }) : /* @__PURE__ */ (0, import_jsx_runtime26.jsx)(CommandPalette, { ...componentProps }) });
+    }, children: componentType === "translator" ? /* @__PURE__ */ (0, import_jsx_runtime28.jsx)(TranslatorWidget, { ...componentProps }) : componentType === "currency-converter" ? /* @__PURE__ */ (0, import_jsx_runtime28.jsx)(CurrencyConverterWidget, { ...componentProps }) : componentType === "clipboard-history" ? /* @__PURE__ */ (0, import_jsx_runtime28.jsx)(ClipboardHistoryWidget, { ...componentProps }) : /* @__PURE__ */ (0, import_jsx_runtime28.jsx)(CommandPalette, { ...componentProps }) });
   }
 
   // src/renderer/index.tsx
-  var import_jsx_runtime27 = __toESM(require_jsx_runtime());
+  var import_jsx_runtime29 = __toESM(require_jsx_runtime());
   var root = (0, import_client.createRoot)(document.getElementById("root"));
-  root.render(/* @__PURE__ */ (0, import_jsx_runtime27.jsx)(App, {}));
+  root.render(/* @__PURE__ */ (0, import_jsx_runtime29.jsx)(App, {}));
 })();
 /*! Bundled license information:
 
@@ -33577,6 +34096,14 @@ lucide-react/dist/esm/icons/dollar-sign.js:
    *)
 
 lucide-react/dist/esm/icons/globe.js:
+  (**
+   * @license lucide-react v0.365.0 - ISC
+   *
+   * This source code is licensed under the ISC license.
+   * See the LICENSE file in the root directory of this source tree.
+   *)
+
+lucide-react/dist/esm/icons/image.js:
   (**
    * @license lucide-react v0.365.0 - ISC
    *

@@ -47,6 +47,36 @@ export const WINDOW_REGISTRY: Record<string, WindowTypeConfig> = {
       blurDelay: 0,
     },
   },
+  // Currency converter window config
+  'currency-converter': {
+    componentType: 'currency-converter',
+    defaultConfig: {
+      width: 450,
+      height: 400,  // Reduced from 520 to hug content
+      transparent: false,
+      backgroundColor: '#f9fafb',
+      frame: false,
+      alwaysOnTop: true,
+      resizable: false,  // Fixed size
+      skipTaskbar: true,
+      blurDelay: 200,
+    },
+  },
+  // Clipboard history widget
+  'clipboard-history': {
+    componentType: 'clipboard-history',
+    defaultConfig: {
+      width: 270,  // Match command palette width
+      height: 400,  // Fixed height - will auto-size to content
+      transparent: false,
+      backgroundColor: '#ffffff',
+      frame: false,
+      alwaysOnTop: true,
+      resizable: false,
+      skipTaskbar: true,
+      blurDelay: 0,  // Immediate hide on blur
+    },
+  },
   // Action popover - NO LONGER NEEDED as separate window
   // Keeping for backward compatibility, but won't be used
   'action-popover': {
@@ -69,7 +99,7 @@ export const WINDOW_REGISTRY: Record<string, WindowTypeConfig> = {
 export function getWindowConfig(widgetId: string, widgetWindowOptions?: any): WindowTypeConfig['defaultConfig'] {
   const registryEntry = WINDOW_REGISTRY[widgetId]
   const defaultConfig = registryEntry?.defaultConfig || WINDOW_REGISTRY.palette.defaultConfig
-  
+
   // Merge widget-specific windowOptions with defaults
   if (widgetWindowOptions) {
     return {
@@ -80,7 +110,7 @@ export function getWindowConfig(widgetId: string, widgetWindowOptions?: any): Wi
       height: widgetWindowOptions.height ?? defaultConfig.height,
     }
   }
-  
+
   return defaultConfig
 }
 
