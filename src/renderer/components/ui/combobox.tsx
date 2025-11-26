@@ -1,7 +1,6 @@
 "use client"
 
 import * as React from "react"
-import { Check, ChevronsUpDown } from 'lucide-react'
 
 import { cn } from "@/lib/utils"
 import { Button } from "@/components/ui/button"
@@ -58,8 +57,6 @@ export function Combobox({
           )}
         >
           {value || placeholder}
-
-          <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50 text-ink-0" />
         </Button>
       </PopoverTrigger>
 
@@ -71,7 +68,7 @@ export function Combobox({
           <CommandInput placeholder={searchPlaceholder} className="h-9" />
           <CommandEmpty>No results.</CommandEmpty>
 
-          <CommandGroup className="max-h-[200px] overflow-auto">
+          <CommandGroup className="max-h-[100px] overflow-auto">
             {items.map((item) => (
               <CommandItem
                 key={item}
@@ -82,12 +79,6 @@ export function Combobox({
                 }}
                 className="cursor-pointer"
               >
-                <Check
-                  className={cn(
-                    "mr-2 h-4 w-4",
-                    item === value ? "opacity-100" : "opacity-0"
-                  )}
-                />
                 {item}
               </CommandItem>
             ))}

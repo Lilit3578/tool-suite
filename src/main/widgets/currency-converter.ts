@@ -37,6 +37,8 @@ export class CurrencyConverter implements Widget {
   id = 'currency-converter'
   label = 'Currency Converter'
   icon = 'dollar-sign'
+  keywords = ['currency', 'convert', 'money', 'exchange', 'forex', 'cu']
+  tags = ['utility', 'finance']
   componentType = 'currency-converter'
   windowOptions = {
     width: 450,
@@ -51,17 +53,18 @@ export class CurrencyConverter implements Widget {
   }
 
   actions = [
-    { id: 'convert-usd', label: 'Convert to US Dollar (USD)', handler: (t?: string) => this.quickConvert(t, 'USD') },
-    { id: 'convert-eur', label: 'Convert to Euro (EUR)', handler: (t?: string) => this.quickConvert(t, 'EUR') },
-    { id: 'convert-gbp', label: 'Convert to British Pound (GBP)', handler: (t?: string) => this.quickConvert(t, 'GBP') },
-    { id: 'convert-jpy', label: 'Convert to Japanese Yen (JPY)', handler: (t?: string) => this.quickConvert(t, 'JPY') },
-    { id: 'convert-aud', label: 'Convert to Australian Dollar (AUD)', handler: (t?: string) => this.quickConvert(t, 'AUD') },
-    { id: 'convert-cad', label: 'Convert to Canadian Dollar (CAD)', handler: (t?: string) => this.quickConvert(t, 'CAD') },
-    { id: 'convert-chf', label: 'Convert to Swiss Franc (CHF)', handler: (t?: string) => this.quickConvert(t, 'CHF') },
-    { id: 'convert-cny', label: 'Convert to Chinese Yuan (CNY)', handler: (t?: string) => this.quickConvert(t, 'CNY') },
-    { id: 'convert-inr', label: 'Convert to Indian Rupee (INR)', handler: (t?: string) => this.quickConvert(t, 'INR') },
-    { id: 'convert-mxn', label: 'Convert to Mexican Peso (MXN)', handler: (t?: string) => this.quickConvert(t, 'MXN') },
+    { id: 'convert-aud', label: 'Convert to Australian Dollar (AUD)', keywords: ['australian', 'dollar', 'aud', 'australia', 'a$'], tags: ['currency', 'conversion'], handler: (t?: string) => this.quickConvert(t, 'AUD') },
+    { id: 'convert-gbp', label: 'Convert to British Pound (GBP)', keywords: ['british', 'pound', 'gbp', 'uk', 'sterling', '£'], tags: ['currency', 'conversion'], handler: (t?: string) => this.quickConvert(t, 'GBP') },
+    { id: 'convert-cad', label: 'Convert to Canadian Dollar (CAD)', keywords: ['canadian', 'dollar', 'cad', 'canada', 'c$'], tags: ['currency', 'conversion'], handler: (t?: string) => this.quickConvert(t, 'CAD') },
+    { id: 'convert-cny', label: 'Convert to Chinese Yuan (CNY)', keywords: ['chinese', 'yuan', 'cny', 'china', 'rmb'], tags: ['currency', 'conversion'], handler: (t?: string) => this.quickConvert(t, 'CNY') },
+    { id: 'convert-eur', label: 'Convert to Euro (EUR)', keywords: ['euro', 'eur', 'europe', 'european', '€'], tags: ['currency', 'conversion'], handler: (t?: string) => this.quickConvert(t, 'EUR') },
+    { id: 'convert-inr', label: 'Convert to Indian Rupee (INR)', keywords: ['indian', 'rupee', 'inr', 'india', '₹'], tags: ['currency', 'conversion'], handler: (t?: string) => this.quickConvert(t, 'INR') },
+    { id: 'convert-jpy', label: 'Convert to Japanese Yen (JPY)', keywords: ['japanese', 'yen', 'jpy', 'japan', '¥'], tags: ['currency', 'conversion'], handler: (t?: string) => this.quickConvert(t, 'JPY') },
+    { id: 'convert-mxn', label: 'Convert to Mexican Peso (MXN)', keywords: ['mexican', 'peso', 'mxn', 'mexico'], tags: ['currency', 'conversion'], handler: (t?: string) => this.quickConvert(t, 'MXN') },
+    { id: 'convert-chf', label: 'Convert to Swiss Franc (CHF)', keywords: ['swiss', 'franc', 'chf', 'switzerland'], tags: ['currency', 'conversion'], handler: (t?: string) => this.quickConvert(t, 'CHF') },
+    { id: 'convert-usd', label: 'Convert to US Dollar (USD)', keywords: ['us', 'dollar', 'usd', 'usa', 'america', '$'], tags: ['currency', 'conversion'], handler: (t?: string) => this.quickConvert(t, 'USD') },
   ]
+
 
   constructor(private manager?: any) { }
 
@@ -109,12 +112,28 @@ export class CurrencyConverter implements Widget {
       cleanText = cleanText.replace(curr.pattern, '')
     }
 
-    // Remove thousand separators (commas, spaces)
+    // Remove thousand separators (commas, spaces) but keep k/m suffixes
     cleanText = cleanText.replace(/,/g, '').replace(/\s+/g, '')
 
-    // Parse as float
-    const amount = parseFloat(cleanText)
-    const parsedAmount = isNaN(amount) ? null : amount
+    // Try parsing with shorthand support (15k, 1m, 2.5k, etc.)
+    const shorthandMatch = cleanText.match(/^([0-9.]+)([km])$/i)
+    let parsedAmount: number | null = null
+
+    if (shorthandMatch) {
+      const [, numStr, suffix] = shorthandMatch
+      const baseNum = parseFloat(numStr)
+      if (!isNaN(baseNum)) {
+        if (suffix.toLowerCase() === 'k') {
+          parsedAmount = baseNum * 1000
+        } else if (suffix.toLowerCase() === 'm') {
+          parsedAmount = baseNum * 1000000
+        }
+      }
+    } else {
+      // Fallback to regular float parsing
+      const amount = parseFloat(cleanText)
+      parsedAmount = isNaN(amount) ? null : amount
+    }
 
     logger.info('Parsed text:', { original: text, currency, amount: parsedAmount })
 
@@ -145,8 +164,18 @@ export class CurrencyConverter implements Widget {
       )
 
       if (conversionResult.success) {
-        // Format result - clean and simple
-        const formatted = `${parsed.amount} ${parsed.currency} = ${conversionResult.result?.toFixed(2)} ${targetCurrency} (Rate: ${conversionResult.rate?.toFixed(4)})`
+        // Format result with thousand separators for readability
+        const formattedInput = new Intl.NumberFormat('en-US', {
+          minimumFractionDigits: 2,
+          maximumFractionDigits: 2,
+        }).format(parsed.amount)
+
+        const formattedResult = new Intl.NumberFormat('en-US', {
+          minimumFractionDigits: 2,
+          maximumFractionDigits: 2,
+        }).format(conversionResult.result || 0)
+
+        const formatted = `${formattedInput} ${parsed.currency} = ${formattedResult} ${targetCurrency} (Rate: ${conversionResult.rate?.toFixed(4)})`
 
         return { success: true, result: formatted }
       } else {

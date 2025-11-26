@@ -13,18 +13,19 @@ declare global {
   }
 }
 
+// Formatted currency labels for ComboBox display (e.g., "GBP £")
 const CURRENCIES: Record<string, string> = {
-  USD: 'US Dollar ($)',
-  EUR: 'Euro (€)',
-  GBP: 'British Pound (£)',
-  JPY: 'Japanese Yen (¥)',
-  AUD: 'Australian Dollar (A$)',
-  CAD: 'Canadian Dollar (C$)',
-  CHF: 'Swiss Franc (CHF)',
-  CNY: 'Chinese Yuan (¥)',
-  INR: 'Indian Rupee (₹)',
-  MXN: 'Mexican Peso ($)',
-  KRW: 'South Korean Won (₩)',
+  USD: 'USD $',
+  EUR: 'EUR €',
+  GBP: 'GBP £',
+  JPY: 'JPY ¥',
+  AUD: 'AUD A$',
+  CAD: 'CAD C$',
+  CHF: 'CHF',
+  CNY: 'CNY ¥',
+  INR: 'INR ₹',
+  MXN: 'MXN $',
+  KRW: 'KRW ₩',
 }
 
 const CURRENCY_SYMBOLS: Record<string, string> = {
@@ -41,13 +42,40 @@ const CURRENCY_SYMBOLS: Record<string, string> = {
   KRW: '₩',
 }
 
+// Helper function to format numbers with thousand separators
+function formatNumber(num: number): string {
+  return new Intl.NumberFormat('en-US', {
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2,
+  }).format(num)
+}
+
+// Helper function to parse shorthand numeric inputs (15k, 1m, 2.5k, etc.)
+function parseShorthand(value: string): number | null {
+  if (!value || !value.trim()) return null
+
+  const cleanValue = value.trim().toLowerCase()
+  const match = cleanValue.match(/^([0-9.]+)([km]?)$/)
+
+  if (!match) return null
+
+  const [, numStr, suffix] = match
+  const baseNum = parseFloat(numStr)
+
+  if (isNaN(baseNum)) return null
+
+  if (suffix === 'k') return baseNum * 1000
+  if (suffix === 'm') return baseNum * 1000000
+  return baseNum
+}
+
 interface CurrencyConverterWidgetProps {
   selectedText?: string
   detectedAmount?: number
   detectedCurrency?: string
 }
 
-// Helper function to parse amount from text (extract numbers)
+// Helper function to parse amount from text (extract numbers, support shorthand)
 function parseAmountFromText(text: string): number | null {
   if (!text || !text.trim()) return null
 
@@ -63,10 +91,14 @@ function parseAmountFromText(text: string): number | null {
     cleanText = cleanText.replace(pattern, '')
   }
 
-  // Remove thousand separators (commas, spaces)
+  // Remove thousand separators (commas, spaces) but keep k/m suffixes
   cleanText = cleanText.replace(/,/g, '').replace(/\s+/g, '')
 
-  // Parse as float
+  // Try parsing with shorthand support first
+  const shorthandResult = parseShorthand(cleanText)
+  if (shorthandResult !== null) return shorthandResult
+
+  // Fallback to regular float parsing
   const amount = parseFloat(cleanText)
   return isNaN(amount) ? null : amount
 }
@@ -135,10 +167,11 @@ export default function CurrencyConverterWidget(props?: CurrencyConverterWidgetP
   // Auto-convert with debounce
   useEffect(() => {
     const timeout = setTimeout(() => {
-      const numAmount = parseFloat(amount)
+      // Parse amount using shorthand support
+      const numAmount = parseShorthand(amount)
 
       // Clear result if amount is invalid
-      if (!amount.trim() || isNaN(numAmount)) {
+      if (!amount.trim() || numAmount === null) {
         setResult(null)
         setRate(null)
         setError("")
@@ -242,7 +275,7 @@ export default function CurrencyConverterWidget(props?: CurrencyConverterWidgetP
   return (
     <Card
       ref={containerRef}
-      className="w-full bg-ink-0 border border-ink-400 rounded-xl p-4 flex flex-col gap-4"
+      className="w-full bg-ink-0 border border-ink-400 rounded-xl p-4 flex flex-col gap-2"
     >
       {/* Header */}
       <div className="flex items-center gap-2">
@@ -250,8 +283,6 @@ export default function CurrencyConverterWidget(props?: CurrencyConverterWidgetP
           currency <span className="not-italic"> </span> converter
         </h2>
       </div>
-
-      <Separator className="bg-ink-200" />
 
       {/* FROM ROW — matches screenshot */}
       <div
@@ -271,15 +302,25 @@ export default function CurrencyConverterWidget(props?: CurrencyConverterWidgetP
             }}
             items={Object.values(CURRENCIES)}
             placeholder="Select currency"
-            className="w-[120px] text-ink-0"
+            className="w-[80px] text-ink-0"
           />
         </div>
 
-        {/* Editable numeric input — RIGHT aligned */}
+        {/* Editable numeric input — RIGHT aligned, supports shorthand (15k, 1m) */}
         <input
           type="text"
           value={amount}
-          onChange={(e) => setAmount(e.target.value)}
+          onChange={(e) => {
+            const inputValue = e.target.value
+            setAmount(inputValue)
+
+            // Auto-expand shorthand on blur or when complete
+            const parsed = parseShorthand(inputValue)
+            if (parsed !== null && /[km]$/i.test(inputValue)) {
+              // Optionally expand shorthand immediately
+              // setAmount(String(parsed))
+            }
+          }}
           className="flex-1 text-right bg-transparent border-none outline-none
           text-[14px] font-normal text-ink-1000"
           placeholder="0.00"
@@ -308,18 +349,21 @@ export default function CurrencyConverterWidget(props?: CurrencyConverterWidgetP
           />
         </div>
 
-        {/* Second editable input */}
+        {/* Second editable input with formatted output */}
         <input
           type="text"
-          value={result !== null ? result.toFixed(2) : ""}
+          value={result !== null ? formatNumber(result) : ""}
           onChange={(e) => {
             const v = e.target.value
+            // Remove formatting for parsing
+            const cleanValue = v.replace(/,/g, '')
+
             // reverse convert when user edits the 'to' field
-            if (!v.trim() || isNaN(parseFloat(v))) {
+            if (!cleanValue.trim() || isNaN(parseFloat(cleanValue))) {
               setResult(null)
               return
             }
-            const num = parseFloat(v)
+            const num = parseFloat(cleanValue)
             if (rate) {
               // reverse direction: to → from
               setAmount((num / rate).toString())
@@ -330,8 +374,6 @@ export default function CurrencyConverterWidget(props?: CurrencyConverterWidgetP
           placeholder="0.00"
         />
       </div>
-
-      <Separator className="bg-ink-200" />
 
       {/* Footer */}
       <div className="text-right text-ink-700 font-serif italic text-[20px] leading-7">

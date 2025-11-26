@@ -16,13 +16,15 @@ const translationCache = new SimpleCache<string>(3600000)
 export class TextTranslator implements Widget {
   id = 'translator'
   label = 'Translator'
-  icon = 'globe'
+  icon = 'translate'
+  keywords = ['translate', 'translation', 'language', 'lang']
+  tags = ['utility', 'text']
   componentType = 'translator'
   windowOptions = {
-    width: 480,
-    height: 540,
+    width: 500,
+    height: 400,
     transparent: false,
-    backgroundColor: '#f9fafb', // gray-50
+    backgroundColor: '#ffffff',
     frame: false,
     alwaysOnTop: true,
     resizable: false,
@@ -32,32 +34,33 @@ export class TextTranslator implements Widget {
 
 
   actions = [
-    { id: 'translate-en', label: 'Translate to English', handler: (t?: string) => this.quickTranslate(t, 'en') },
-    { id: 'translate-es', label: 'Translate to Spanish', handler: (t?: string) => this.quickTranslate(t, 'es') },
-    { id: 'translate-fr', label: 'Translate to French', handler: (t?: string) => this.quickTranslate(t, 'fr') },
-    { id: 'translate-de', label: 'Translate to German', handler: (t?: string) => this.quickTranslate(t, 'de') },
-    { id: 'translate-it', label: 'Translate to Italian', handler: (t?: string) => this.quickTranslate(t, 'it') },
-    { id: 'translate-pt', label: 'Translate to Portuguese', handler: (t?: string) => this.quickTranslate(t, 'pt') },
-    { id: 'translate-ru', label: 'Translate to Russian', handler: (t?: string) => this.quickTranslate(t, 'ru') },
-    { id: 'translate-ja', label: 'Translate to Japanese', handler: (t?: string) => this.quickTranslate(t, 'ja') },
-    { id: 'translate-ko', label: 'Translate to Korean', handler: (t?: string) => this.quickTranslate(t, 'ko') },
-    { id: 'translate-zh', label: 'Translate to Chinese', handler: (t?: string) => this.quickTranslate(t, 'zh-CN') },
-    { id: 'translate-ar', label: 'Translate to Arabic', handler: (t?: string) => this.quickTranslate(t, 'ar') },
-    { id: 'translate-hi', label: 'Translate to Hindi', handler: (t?: string) => this.quickTranslate(t, 'hi') },
-    { id: 'translate-tr', label: 'Translate to Turkish', handler: (t?: string) => this.quickTranslate(t, 'tr') },
-    { id: 'translate-nl', label: 'Translate to Dutch', handler: (t?: string) => this.quickTranslate(t, 'nl') },
-    { id: 'translate-pl', label: 'Translate to Polish', handler: (t?: string) => this.quickTranslate(t, 'pl') },
-    { id: 'translate-sv', label: 'Translate to Swedish', handler: (t?: string) => this.quickTranslate(t, 'sv') },
-    { id: 'translate-da', label: 'Translate to Danish', handler: (t?: string) => this.quickTranslate(t, 'da') },
-    { id: 'translate-no', label: 'Translate to Norwegian', handler: (t?: string) => this.quickTranslate(t, 'no') },
-    { id: 'translate-fi', label: 'Translate to Finnish', handler: (t?: string) => this.quickTranslate(t, 'fi') },
-    { id: 'translate-cs', label: 'Translate to Czech', handler: (t?: string) => this.quickTranslate(t, 'cs') },
-    { id: 'translate-el', label: 'Translate to Greek', handler: (t?: string) => this.quickTranslate(t, 'el') },
-    { id: 'translate-he', label: 'Translate to Hebrew', handler: (t?: string) => this.quickTranslate(t, 'he') },
-    { id: 'translate-th', label: 'Translate to Thai', handler: (t?: string) => this.quickTranslate(t, 'th') },
-    { id: 'translate-vi', label: 'Translate to Vietnamese', handler: (t?: string) => this.quickTranslate(t, 'vi') },
-    { id: 'translate-id', label: 'Translate to Indonesian', handler: (t?: string) => this.quickTranslate(t, 'id') },
+    { id: 'translate-ar', label: 'Translate to Arabic', keywords: ['arabic', 'arab', 'ar'], tags: ['translation', 'language'], handler: (t?: string) => this.quickTranslate(t, 'ar') },
+    { id: 'translate-zh', label: 'Translate to Chinese', keywords: ['chinese', 'china', 'zh', 'mandarin'], tags: ['translation', 'language'], handler: (t?: string) => this.quickTranslate(t, 'zh-CN') },
+    { id: 'translate-cs', label: 'Translate to Czech', keywords: ['czech', 'czechia', 'cs'], tags: ['translation', 'language'], handler: (t?: string) => this.quickTranslate(t, 'cs') },
+    { id: 'translate-da', label: 'Translate to Danish', keywords: ['danish', 'denmark', 'da'], tags: ['translation', 'language'], handler: (t?: string) => this.quickTranslate(t, 'da') },
+    { id: 'translate-nl', label: 'Translate to Dutch', keywords: ['dutch', 'netherlands', 'nl'], tags: ['translation', 'language'], handler: (t?: string) => this.quickTranslate(t, 'nl') },
+    { id: 'translate-en', label: 'Translate to English', keywords: ['english', 'en', 'uk', 'us'], tags: ['translation', 'language'], handler: (t?: string) => this.quickTranslate(t, 'en') },
+    { id: 'translate-fi', label: 'Translate to Finnish', keywords: ['finnish', 'finland', 'fi'], tags: ['translation', 'language'], handler: (t?: string) => this.quickTranslate(t, 'fi') },
+    { id: 'translate-fr', label: 'Translate to French', keywords: ['french', 'france', 'fr'], tags: ['translation', 'language'], handler: (t?: string) => this.quickTranslate(t, 'fr') },
+    { id: 'translate-de', label: 'Translate to German', keywords: ['german', 'germany', 'de'], tags: ['translation', 'language'], handler: (t?: string) => this.quickTranslate(t, 'de') },
+    { id: 'translate-el', label: 'Translate to Greek', keywords: ['greek', 'greece', 'el'], tags: ['translation', 'language'], handler: (t?: string) => this.quickTranslate(t, 'el') },
+    { id: 'translate-he', label: 'Translate to Hebrew', keywords: ['hebrew', 'israel', 'he'], tags: ['translation', 'language'], handler: (t?: string) => this.quickTranslate(t, 'he') },
+    { id: 'translate-hi', label: 'Translate to Hindi', keywords: ['hindi', 'india', 'hi'], tags: ['translation', 'language'], handler: (t?: string) => this.quickTranslate(t, 'hi') },
+    { id: 'translate-id', label: 'Translate to Indonesian', keywords: ['indonesian', 'indonesia', 'id'], tags: ['translation', 'language'], handler: (t?: string) => this.quickTranslate(t, 'id') },
+    { id: 'translate-it', label: 'Translate to Italian', keywords: ['italian', 'italy', 'it', 'ita', 'italiano'], tags: ['translation', 'language'], handler: (t?: string) => this.quickTranslate(t, 'it') },
+    { id: 'translate-ja', label: 'Translate to Japanese', keywords: ['japanese', 'japan', 'ja'], tags: ['translation', 'language'], handler: (t?: string) => this.quickTranslate(t, 'ja') },
+    { id: 'translate-ko', label: 'Translate to Korean', keywords: ['korean', 'korea', 'ko'], tags: ['translation', 'language'], handler: (t?: string) => this.quickTranslate(t, 'ko') },
+    { id: 'translate-no', label: 'Translate to Norwegian', keywords: ['norwegian', 'norway', 'no'], tags: ['translation', 'language'], handler: (t?: string) => this.quickTranslate(t, 'no') },
+    { id: 'translate-pl', label: 'Translate to Polish', keywords: ['polish', 'poland', 'pl'], tags: ['translation', 'language'], handler: (t?: string) => this.quickTranslate(t, 'pl') },
+    { id: 'translate-pt', label: 'Translate to Portuguese', keywords: ['portuguese', 'portugal', 'brazil', 'pt'], tags: ['translation', 'language'], handler: (t?: string) => this.quickTranslate(t, 'pt') },
+    { id: 'translate-ru', label: 'Translate to Russian', keywords: ['russian', 'russia', 'ru'], tags: ['translation', 'language'], handler: (t?: string) => this.quickTranslate(t, 'ru') },
+    { id: 'translate-es', label: 'Translate to Spanish', keywords: ['spanish', 'spain', 'es'], tags: ['translation', 'language'], handler: (t?: string) => this.quickTranslate(t, 'es') },
+    { id: 'translate-sv', label: 'Translate to Swedish', keywords: ['swedish', 'sweden', 'sv'], tags: ['translation', 'language'], handler: (t?: string) => this.quickTranslate(t, 'sv') },
+    { id: 'translate-th', label: 'Translate to Thai', keywords: ['thai', 'thailand', 'th'], tags: ['translation', 'language'], handler: (t?: string) => this.quickTranslate(t, 'th') },
+    { id: 'translate-tr', label: 'Translate to Turkish', keywords: ['turkish', 'turkey', 'tr'], tags: ['translation', 'language'], handler: (t?: string) => this.quickTranslate(t, 'tr') },
+    { id: 'translate-vi', label: 'Translate to Vietnamese', keywords: ['vietnamese', 'vietnam', 'vi'], tags: ['translation', 'language'], handler: (t?: string) => this.quickTranslate(t, 'vi') },
   ]
+
 
 
   constructor(private manager?: any) { }

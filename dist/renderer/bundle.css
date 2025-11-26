@@ -660,6 +660,9 @@ label, button{
   white-space: nowrap;
   border-width: 0;
 }
+.static{
+  position: static;
+}
 .fixed{
   position: fixed;
 }
@@ -706,9 +709,6 @@ label, button{
 }
 .mb-1{
   margin-bottom: 0.25rem;
-}
-.ml-2{
-  margin-left: 0.5rem;
 }
 .ml-auto{
   margin-left: auto;
@@ -770,8 +770,8 @@ label, button{
 .max-h-\[--radix-select-content-available-height\]{
   max-height: var(--radix-select-content-available-height);
 }
-.max-h-\[200px\]{
-  max-height: 200px;
+.max-h-\[100px\]{
+  max-height: 100px;
 }
 .max-h-\[300px\]{
   max-height: 300px;
@@ -808,6 +808,9 @@ label, button{
 }
 .w-\[270px\]{
   width: 270px;
+}
+.w-\[80px\]{
+  width: 80px;
 }
 .w-auto{
   width: auto;
@@ -967,9 +970,6 @@ label, button{
 }
 .border{
   border-width: 1px;
-}
-.border-0{
-  border-width: 0px;
 }
 .border-b{
   border-bottom-width: 1px;
@@ -1251,12 +1251,6 @@ label, button{
 .underline-offset-4{
   text-underline-offset: 4px;
 }
-.opacity-0{
-  opacity: 0;
-}
-.opacity-100{
-  opacity: 1;
-}
 .opacity-50{
   opacity: 0.5;
 }
@@ -1277,6 +1271,10 @@ label, button{
 }
 .ring-offset-background{
   --tw-ring-offset-color: rgb(var(--background) / 1);
+}
+.blur{
+  --tw-blur: blur(8px);
+  filter: var(--tw-blur) var(--tw-brightness) var(--tw-contrast) var(--tw-grayscale) var(--tw-hue-rotate) var(--tw-invert) var(--tw-saturate) var(--tw-sepia) var(--tw-drop-shadow);
 }
 .filter{
   filter: var(--tw-blur) var(--tw-brightness) var(--tw-contrast) var(--tw-grayscale) var(--tw-hue-rotate) var(--tw-invert) var(--tw-saturate) var(--tw-sepia) var(--tw-drop-shadow);

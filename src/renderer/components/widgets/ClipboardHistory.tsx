@@ -118,7 +118,7 @@ export default function ClipboardHistoryWidget({ items: initialItems }: Clipboar
             <Command
                 ref={commandRef}
                 data-clipboard-container
-                className="p-4 text-center text-muted-foreground border-0 outline-none focus:outline-none focus-visible:outline-none focus:ring-0 focus-visible:ring-0"
+                className="p-4 text-center text-muted-foreground"
             >
                 No clipboard history yet
             </Command>
@@ -130,7 +130,7 @@ export default function ClipboardHistoryWidget({ items: initialItems }: Clipboar
             ref={commandRef}
             tabIndex={0}
             data-clipboard-container
-            className="p-0 m-0 h-auto border-0 outline-none focus:outline-none focus-visible:outline-none focus:ring-0 focus-visible:ring-0"
+            className="p-0 m-0 h-auto"
         >
             <CommandList className="overflow-visible">
                 <CommandGroup heading="Recent Clipboard (1-5)">

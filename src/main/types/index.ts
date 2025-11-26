@@ -1,7 +1,16 @@
 // src/main/types.ts
+// WidgetAction represents an action that can be executed from a widget
 export interface WidgetAction {
   id: string;
   label: string;
+  /**
+   * Keywords improve search accuracy. Add:
+   * - Language/currency names and codes
+   * - Common synonyms and abbreviations
+   * - Related terms users might search for
+   */
+  keywords?: string[];
+  tags?: string[];  // Categories (e.g., ["translation", "language"])
   handler?: (selectedText?: string) => Promise<any> | any;
 }
 
@@ -21,6 +30,8 @@ export interface Widget {
   id: string;
   label: string;
   icon?: string;
+  keywords?: string[];  // Searchable terms for this widget
+  tags?: string[];      // Categories
   actions?: WidgetAction[];
   windowOptions?: WindowConfig;
   componentType?: string; // React component name to render (e.g., 'translator', 'palette', 'inline-result')

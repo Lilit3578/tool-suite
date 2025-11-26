@@ -1093,7 +1093,7 @@
             var dispatcher = resolveDispatcher();
             return dispatcher.useReducer(reducer, initialArg, init);
           }
-          function useRef17(initialValue) {
+          function useRef18(initialValue) {
             var dispatcher = resolveDispatcher();
             return dispatcher.useRef(initialValue);
           }
@@ -1887,7 +1887,7 @@
           exports.useLayoutEffect = useLayoutEffect6;
           exports.useMemo = useMemo8;
           exports.useReducer = useReducer3;
-          exports.useRef = useRef17;
+          exports.useRef = useRef18;
           exports.useState = useState21;
           exports.useSyncExternalStore = useSyncExternalStore2;
           exports.useTransition = useTransition;
@@ -29798,15 +29798,6 @@ For more information, see https://radix-ui.com/primitives/docs/components/${titl
     ["path", { d: "M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z", key: "1cyq3y" }]
   ]);
 
-  // node_modules/lucide-react/dist/esm/icons/check.js
-  var Check = createLucideIcon("Check", [["path", { d: "M20 6 9 17l-5-5", key: "1gmf2c" }]]);
-
-  // node_modules/lucide-react/dist/esm/icons/chevrons-up-down.js
-  var ChevronsUpDown = createLucideIcon("ChevronsUpDown", [
-    ["path", { d: "m7 15 5 5 5-5", key: "1hf1tw" }],
-    ["path", { d: "m7 9 5-5 5 5", key: "sgt6xg" }]
-  ]);
-
   // node_modules/lucide-react/dist/esm/icons/clipboard.js
   var Clipboard = createLucideIcon("Clipboard", [
     ["rect", { width: "8", height: "4", x: "8", y: "2", rx: "1", ry: "1", key: "tgr4d6" }],
@@ -32784,6 +32775,7 @@ For more information, see https://radix-ui.com/primitives/docs/components/${titl
     (0, import_react4.useEffect)(() => {
       const onShow = async (_event, data) => {
         setOpen(true);
+        setQuery("");
         setSelectedActionId(null);
         setPopoverOpen(false);
         if (window.electronAPI?.getWindowPosition) {
@@ -32814,9 +32806,15 @@ For more information, see https://radix-ui.com/primitives/docs/components/${titl
         clearTimeout(debounceTimerRef.current);
       }
       debounceTimerRef.current = setTimeout(async () => {
+        console.log(`[FRONTEND DEBUG] Requesting suggestions for query: "${query}"`);
         const res = await window.electronAPI.getSuggestions(query || "");
-        if (active)
+        console.log(`[FRONTEND DEBUG] Received ${res.length} suggestions from backend:`, res);
+        if (active) {
           setSuggestions(res);
+          console.log("[FRONTEND DEBUG] Updated suggestions state");
+        } else {
+          console.log("[FRONTEND DEBUG] Component unmounted, ignoring results");
+        }
       }, query ? 150 : 0);
       return () => {
         active = false;
@@ -32930,16 +32928,31 @@ For more information, see https://radix-ui.com/primitives/docs/components/${titl
         setPopoverOpen(true);
       }
     }, [capturedText, popoverOpen, selectedActionId, isNearRightEdge]);
-    const suggestedItems = (0, import_react4.useMemo)(() => suggestions.slice(0, 4), [suggestions]);
+    const suggestedItems = (0, import_react4.useMemo)(() => {
+      const items = suggestions.slice(0, 4);
+      console.log(`[FRONTEND DEBUG] suggestedItems (top 4):`, items);
+      return items;
+    }, [suggestions]);
     const suggestedIds = (0, import_react4.useMemo)(() => new Set(suggestedItems.map((s) => s.id)), [suggestedItems]);
-    const actionItems = (0, import_react4.useMemo)(
-      () => suggestions.filter((s) => s.type === "action" && !suggestedIds.has(s.id)),
-      [suggestions, suggestedIds]
-    );
-    const widgetItems = (0, import_react4.useMemo)(
-      () => widgets.filter((w) => !suggestedIds.has(w.id)),
-      [widgets, suggestedIds]
-    );
+    const actionItems = (0, import_react4.useMemo)(() => {
+      const items = suggestions.filter((s) => s.type === "action" && !suggestedIds.has(s.id)).sort((a, b) => a.label.localeCompare(b.label));
+      console.log(`[FRONTEND DEBUG] actionItems (${items.length}):`, items.map((i) => i.label));
+      return items;
+    }, [suggestions, suggestedIds]);
+    const widgetItems = (0, import_react4.useMemo)(() => {
+      const items = suggestions.filter((s) => s.type === "widget" && !suggestedIds.has(s.id)).sort((a, b) => a.label.localeCompare(b.label));
+      console.log(`[FRONTEND DEBUG] widgetItems (${items.length}):`, items.map((i) => i.label));
+      return items;
+    }, [suggestions, suggestedIds]);
+    console.log("[FRONTEND DEBUG] Rendering CommandPalette:", {
+      open,
+      query,
+      totalSuggestions: suggestions.length,
+      suggestedCount: suggestedItems.length,
+      widgetCount: widgetItems.length,
+      actionCount: actionItems.length,
+      willShowEmpty: suggestions.length === 0
+    });
     if (!open)
       return null;
     return /* @__PURE__ */ (0, import_jsx_runtime18.jsx)(
@@ -32956,6 +32969,7 @@ For more information, see https://radix-ui.com/primitives/docs/components/${titl
           Command,
           {
             className: "h-[328px] w-[270px]",
+            shouldFilter: false,
             style: {
               position: "absolute",
               left: 0,
@@ -33273,7 +33287,7 @@ For more information, see https://radix-ui.com/primitives/docs/components/${titl
   }) {
     const [open, setOpen] = React43.useState(false);
     return /* @__PURE__ */ (0, import_jsx_runtime24.jsxs)(Popover2, { open: open && !disabled, onOpenChange: setOpen, children: [
-      /* @__PURE__ */ (0, import_jsx_runtime24.jsx)(PopoverTrigger2, { asChild: true, children: /* @__PURE__ */ (0, import_jsx_runtime24.jsxs)(
+      /* @__PURE__ */ (0, import_jsx_runtime24.jsx)(PopoverTrigger2, { asChild: true, children: /* @__PURE__ */ (0, import_jsx_runtime24.jsx)(
         Button,
         {
           variant: "default",
@@ -33289,10 +33303,7 @@ For more information, see https://radix-ui.com/primitives/docs/components/${titl
             disabled && "opacity-70 cursor-not-allowed",
             className
           ),
-          children: [
-            value || placeholder,
-            /* @__PURE__ */ (0, import_jsx_runtime24.jsx)(ChevronsUpDown, { className: "ml-2 h-4 w-4 shrink-0 opacity-50 text-ink-0" })
-          ]
+          children: value || placeholder
         }
       ) }),
       /* @__PURE__ */ (0, import_jsx_runtime24.jsx)(
@@ -33303,7 +33314,7 @@ For more information, see https://radix-ui.com/primitives/docs/components/${titl
           children: /* @__PURE__ */ (0, import_jsx_runtime24.jsxs)(Command, { children: [
             /* @__PURE__ */ (0, import_jsx_runtime24.jsx)(CommandInput, { placeholder: searchPlaceholder, className: "h-9" }),
             /* @__PURE__ */ (0, import_jsx_runtime24.jsx)(CommandEmpty, { children: "No results." }),
-            /* @__PURE__ */ (0, import_jsx_runtime24.jsx)(CommandGroup, { className: "max-h-[200px] overflow-auto", children: items.map((item) => /* @__PURE__ */ (0, import_jsx_runtime24.jsxs)(
+            /* @__PURE__ */ (0, import_jsx_runtime24.jsx)(CommandGroup, { className: "max-h-[100px] overflow-auto", children: items.map((item) => /* @__PURE__ */ (0, import_jsx_runtime24.jsx)(
               CommandItem,
               {
                 value: item,
@@ -33312,18 +33323,7 @@ For more information, see https://radix-ui.com/primitives/docs/components/${titl
                   setOpen(false);
                 },
                 className: "cursor-pointer",
-                children: [
-                  /* @__PURE__ */ (0, import_jsx_runtime24.jsx)(
-                    Check,
-                    {
-                      className: cn(
-                        "mr-2 h-4 w-4",
-                        item === value ? "opacity-100" : "opacity-0"
-                      )
-                    }
-                  ),
-                  item
-                ]
+                children: item
               },
               item
             )) })
@@ -33397,6 +33397,7 @@ For more information, see https://radix-ui.com/primitives/docs/components/${titl
     const [targetLang, setTargetLang] = (0, import_react5.useState)("english");
     const [translated, setTranslated] = (0, import_react5.useState)("");
     const [loading, setLoading] = (0, import_react5.useState)(false);
+    const containerRef = (0, import_react5.useRef)(null);
     (0, import_react5.useEffect)(() => {
       if (props?.selectedText) {
         setInput(props.selectedText);
@@ -33424,6 +33425,33 @@ For more information, see https://radix-ui.com/primitives/docs/components/${titl
       }, 500);
       return () => clearTimeout(id);
     }, [input, targetLang]);
+    (0, import_react5.useEffect)(() => {
+      if (!containerRef.current)
+        return;
+      const resizeWindow = () => {
+        if (containerRef.current && window.electronAPI?.resizeWindow) {
+          const height = containerRef.current.scrollHeight;
+          const newHeight = Math.max(height, 300);
+          console.log("Translator: Resizing window", {
+            scrollHeight: height,
+            newHeight,
+            hasInput: !!input,
+            hasTranslation: !!translated
+          });
+          window.electronAPI.resizeWindow(newHeight);
+        }
+      };
+      const timeoutId = setTimeout(resizeWindow, 150);
+      const resizeObserver = new ResizeObserver(() => {
+        console.log("Translator: ResizeObserver triggered");
+        resizeWindow();
+      });
+      resizeObserver.observe(containerRef.current);
+      return () => {
+        clearTimeout(timeoutId);
+        resizeObserver.disconnect();
+      };
+    }, [input, translated, loading, sourceLang, targetLang]);
     async function translateText(text, tgt) {
       setLoading(true);
       try {
@@ -33451,7 +33479,7 @@ For more information, see https://radix-ui.com/primitives/docs/components/${titl
         setLoading(false);
       }
     }
-    return /* @__PURE__ */ (0, import_jsx_runtime25.jsxs)(Card, { className: "w-full border border-ink-400 bg-ink-100 p-4 space-y-6 rounded-2xl", children: [
+    return /* @__PURE__ */ (0, import_jsx_runtime25.jsxs)(Card, { ref: containerRef, className: "w-full border border-ink-400 bg-ink-100 p-4 space-y-6 rounded-2xl", children: [
       /* @__PURE__ */ (0, import_jsx_runtime25.jsx)("h2", { className: "h2 italic", children: "translator" }),
       /* @__PURE__ */ (0, import_jsx_runtime25.jsx)(Separator2, {}),
       /* @__PURE__ */ (0, import_jsx_runtime25.jsxs)("div", { className: "rounded-xl border border-ink-400 p-4 space-y-3", children: [
@@ -33501,18 +33529,41 @@ For more information, see https://radix-ui.com/primitives/docs/components/${titl
   var import_react6 = __toESM(require_react());
   var import_jsx_runtime26 = __toESM(require_jsx_runtime());
   var CURRENCIES = {
-    USD: "US Dollar ($)",
-    EUR: "Euro (\u20AC)",
-    GBP: "British Pound (\xA3)",
-    JPY: "Japanese Yen (\xA5)",
-    AUD: "Australian Dollar (A$)",
-    CAD: "Canadian Dollar (C$)",
-    CHF: "Swiss Franc (CHF)",
-    CNY: "Chinese Yuan (\xA5)",
-    INR: "Indian Rupee (\u20B9)",
-    MXN: "Mexican Peso ($)",
-    KRW: "South Korean Won (\u20A9)"
+    USD: "USD $",
+    EUR: "EUR \u20AC",
+    GBP: "GBP \xA3",
+    JPY: "JPY \xA5",
+    AUD: "AUD A$",
+    CAD: "CAD C$",
+    CHF: "CHF",
+    CNY: "CNY \xA5",
+    INR: "INR \u20B9",
+    MXN: "MXN $",
+    KRW: "KRW \u20A9"
   };
+  function formatNumber(num) {
+    return new Intl.NumberFormat("en-US", {
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 2
+    }).format(num);
+  }
+  function parseShorthand(value) {
+    if (!value || !value.trim())
+      return null;
+    const cleanValue = value.trim().toLowerCase();
+    const match = cleanValue.match(/^([0-9.]+)([km]?)$/);
+    if (!match)
+      return null;
+    const [, numStr, suffix] = match;
+    const baseNum = parseFloat(numStr);
+    if (isNaN(baseNum))
+      return null;
+    if (suffix === "k")
+      return baseNum * 1e3;
+    if (suffix === "m")
+      return baseNum * 1e6;
+    return baseNum;
+  }
   function parseAmountFromText(text) {
     if (!text || !text.trim())
       return null;
@@ -33534,6 +33585,9 @@ For more information, see https://radix-ui.com/primitives/docs/components/${titl
       cleanText = cleanText.replace(pattern, "");
     }
     cleanText = cleanText.replace(/,/g, "").replace(/\s+/g, "");
+    const shorthandResult = parseShorthand(cleanText);
+    if (shorthandResult !== null)
+      return shorthandResult;
     const amount = parseFloat(cleanText);
     return isNaN(amount) ? null : amount;
   }
@@ -33586,8 +33640,8 @@ For more information, see https://radix-ui.com/primitives/docs/components/${titl
     }, [props?.detectedAmount, props?.detectedCurrency, props?.selectedText]);
     (0, import_react6.useEffect)(() => {
       const timeout = setTimeout(() => {
-        const numAmount = parseFloat(amount);
-        if (!amount.trim() || isNaN(numAmount)) {
+        const numAmount = parseShorthand(amount);
+        if (!amount.trim() || numAmount === null) {
           setResult(null);
           setRate(null);
           setError("");
@@ -33671,14 +33725,13 @@ For more information, see https://radix-ui.com/primitives/docs/components/${titl
       Card,
       {
         ref: containerRef,
-        className: "w-full bg-ink-0 border border-ink-400 rounded-xl p-4 flex flex-col gap-4",
+        className: "w-full bg-ink-0 border border-ink-400 rounded-xl p-4 flex flex-col gap-2",
         children: [
           /* @__PURE__ */ (0, import_jsx_runtime26.jsx)("div", { className: "flex items-center gap-2", children: /* @__PURE__ */ (0, import_jsx_runtime26.jsxs)("h2", { className: "font-serif italic text-[20px] leading-7 text-ink-1000", children: [
             "currency ",
             /* @__PURE__ */ (0, import_jsx_runtime26.jsx)("span", { className: "not-italic", children: " " }),
             " converter"
           ] }) }),
-          /* @__PURE__ */ (0, import_jsx_runtime26.jsx)(Separator2, { className: "bg-ink-200" }),
           /* @__PURE__ */ (0, import_jsx_runtime26.jsxs)(
             "div",
             {
@@ -33699,7 +33752,7 @@ For more information, see https://radix-ui.com/primitives/docs/components/${titl
                         },
                         items: Object.values(CURRENCIES),
                         placeholder: "Select currency",
-                        className: "w-[120px] text-ink-0"
+                        className: "w-[80px] text-ink-0"
                       }
                     )
                   }
@@ -33709,7 +33762,13 @@ For more information, see https://radix-ui.com/primitives/docs/components/${titl
                   {
                     type: "text",
                     value: amount,
-                    onChange: (e) => setAmount(e.target.value),
+                    onChange: (e) => {
+                      const inputValue = e.target.value;
+                      setAmount(inputValue);
+                      const parsed = parseShorthand(inputValue);
+                      if (parsed !== null && /[km]$/i.test(inputValue)) {
+                      }
+                    },
                     className: "flex-1 text-right bg-transparent border-none outline-none\n          text-[14px] font-normal text-ink-1000",
                     placeholder: "0.00"
                   }
@@ -33746,14 +33805,15 @@ For more information, see https://radix-ui.com/primitives/docs/components/${titl
                   "input",
                   {
                     type: "text",
-                    value: result !== null ? result.toFixed(2) : "",
+                    value: result !== null ? formatNumber(result) : "",
                     onChange: (e) => {
                       const v = e.target.value;
-                      if (!v.trim() || isNaN(parseFloat(v))) {
+                      const cleanValue = v.replace(/,/g, "");
+                      if (!cleanValue.trim() || isNaN(parseFloat(cleanValue))) {
                         setResult(null);
                         return;
                       }
-                      const num = parseFloat(v);
+                      const num = parseFloat(cleanValue);
                       if (rate) {
                         setAmount((num / rate).toString());
                       }
@@ -33765,7 +33825,6 @@ For more information, see https://radix-ui.com/primitives/docs/components/${titl
               ]
             }
           ),
-          /* @__PURE__ */ (0, import_jsx_runtime26.jsx)(Separator2, { className: "bg-ink-200" }),
           /* @__PURE__ */ (0, import_jsx_runtime26.jsx)("div", { className: "text-right text-ink-700 font-serif italic text-[20px] leading-7", children: "by nullab" })
         ]
       }
@@ -33847,7 +33906,7 @@ For more information, see https://radix-ui.com/primitives/docs/components/${titl
         {
           ref: commandRef,
           "data-clipboard-container": true,
-          className: "p-4 text-center text-muted-foreground border-0 outline-none focus:outline-none focus-visible:outline-none focus:ring-0 focus-visible:ring-0",
+          className: "p-4 text-center text-muted-foreground",
           children: "No clipboard history yet"
         }
       );
@@ -33858,7 +33917,7 @@ For more information, see https://radix-ui.com/primitives/docs/components/${titl
         ref: commandRef,
         tabIndex: 0,
         "data-clipboard-container": true,
-        className: "p-0 m-0 h-auto border-0 outline-none focus:outline-none focus-visible:outline-none focus:ring-0 focus-visible:ring-0",
+        className: "p-0 m-0 h-auto",
         children: /* @__PURE__ */ (0, import_jsx_runtime27.jsx)(CommandList, { className: "overflow-visible", children: /* @__PURE__ */ (0, import_jsx_runtime27.jsx)(CommandGroup, { heading: "Recent Clipboard (1-5)", children: items.map((item, index2) => /* @__PURE__ */ (0, import_jsx_runtime27.jsxs)(
           CommandItem,
           {
@@ -34048,22 +34107,6 @@ lucide-react/dist/esm/icons/arrow-right.js:
    *)
 
 lucide-react/dist/esm/icons/book-open.js:
-  (**
-   * @license lucide-react v0.365.0 - ISC
-   *
-   * This source code is licensed under the ISC license.
-   * See the LICENSE file in the root directory of this source tree.
-   *)
-
-lucide-react/dist/esm/icons/check.js:
-  (**
-   * @license lucide-react v0.365.0 - ISC
-   *
-   * This source code is licensed under the ISC license.
-   * See the LICENSE file in the root directory of this source tree.
-   *)
-
-lucide-react/dist/esm/icons/chevrons-up-down.js:
   (**
    * @license lucide-react v0.365.0 - ISC
    *

@@ -7,6 +7,15 @@ import { settingsManager } from '../settings/settings-manager'
 
 const logger = createLogger('IPC')
 
+// Type for cached searchable items
+type SearchableItem = {
+  id: string
+  label: string
+  keywords: string[]
+  tags: string[]
+  type: 'widget' | 'action'
+}
+
 // Type guard for currency converter widget
 function hasCurrencyConverter(widget: any): widget is { convertCurrency: (from: string, to: string, amount: number) => Promise<any> } {
   return widget && typeof widget.convertCurrency === 'function'
@@ -32,7 +41,8 @@ interface MainCallbacks {
 // Performance optimization: Cache Fuse.js instance and widget list
 // This eliminates recreation overhead on every keystroke (80-90% faster search)
 let cachedFuseInstance: any = null
-let cachedWidgetList: Array<{ id: string; label: string; type: 'widget' | 'action' }> = []
+// Cached widget/action list for search
+let cachedWidgetList: SearchableItem[] = []
 let widgetListVersion = 0 // Increment when widgets change to invalidate cache
 
 // Helper to invalidate search cache (call when widgets are registered/unregistered)
@@ -139,6 +149,7 @@ export function registerIpcHandlers(widgetManager: WidgetManager, callbacks?: Ma
     }
   })
 
+
   ipcMain.handle('get-suggestions', (_, query: string) => {
     const startTime = Date.now()
 
@@ -148,16 +159,30 @@ export function registerIpcHandlers(widgetManager: WidgetManager, callbacks?: Ma
       cachedWidgetList = []
 
       widgets.forEach(w => {
-        cachedWidgetList.push({ id: w.id, label: w.label, type: 'widget' });
-        (w.actions ?? []).forEach((a: WidgetAction) => cachedWidgetList.push({ id: a.id, label: a.label, type: 'action' }))
+        cachedWidgetList.push({
+          id: w.id,
+          label: w.label,
+          keywords: w.keywords || [],
+          tags: w.tags || [],
+          type: 'widget'
+        });
+        (w.actions ?? []).forEach((a: WidgetAction) => cachedWidgetList.push({
+          id: a.id,
+          label: a.label,
+          keywords: a.keywords || [],
+          tags: a.tags || [],
+          type: 'action'
+        }))
       })
 
       logger.debug(`Built widget list cache: ${cachedWidgetList.length} items`)
     }
 
-    const q = (query || '').toLowerCase().trim()
+    // Normalize query: trim whitespace and lowercase
+    const q = (query || '').trim().toLowerCase()
 
-    // If no query, return all items sorted by usage
+    // If no query, return all items sorted by usage (for suggested section)
+    // The UI will handle alphabetical sorting for widgets/actions sections
     if (!q) {
       const scored = cachedWidgetList.map(item => ({
         item,
@@ -165,55 +190,111 @@ export function registerIpcHandlers(widgetManager: WidgetManager, callbacks?: Ma
       }))
       scored.sort((a: any, b: any) => b.score - a.score)
       const elapsed = Date.now() - startTime
-      logger.debug(`get-suggestions (no query) took ${elapsed}ms`)
+      logger.debug(`get - suggestions(no query) took ${elapsed} ms`)
       return scored.map((s: any) => ({ id: s.item.id, label: s.item.label, type: s.item.type }))
     }
 
-    // Create or reuse Fuse.js instance
+    // Create or reuse Fuse.js instance with improved multi-field config
     if (!cachedFuseInstance) {
       const Fuse = require('fuse.js')
       cachedFuseInstance = new Fuse(cachedWidgetList, {
-        keys: ['label'],
-        threshold: 0.4,
+        keys: [
+          { name: 'label', weight: 0.4 },      // Primary: action/widget label
+          { name: 'keywords', weight: 0.3 },   // Secondary: searchable keywords
+          { name: 'tags', weight: 0.2 },       // Tertiary: categories
+          { name: 'id', weight: 0.1 }          // Fallback: ID
+        ],
+        threshold: 0.3,           // Stricter threshold for better relevance (was 0.5)
         includeScore: true,
-        ignoreLocation: true,
-        // Performance optimization: reduce search depth
+        ignoreLocation: true,     // Match anywhere in the string
         minMatchCharLength: 1,
-        findAllMatches: false, // Stop at first good match
+        distance: 1000,           // Increased from 100 for better multi-word matching
+        findAllMatches: true,     // Find all matching patterns
+        useExtendedSearch: false, // Keep false for simple fuzzy matching
       })
-      logger.debug('Created new Fuse.js instance')
+      logger.debug('Created Fuse.js instance with multi-field search (label, keywords, tags, id)')
     }
 
     const fuseResults = cachedFuseInstance.search(q)
+    logger.debug(`[SEARCH DEBUG] Query: "${q}" - Fuse.js returned ${fuseResults.length} raw results`)
+    if (fuseResults.length > 0 && fuseResults.length <= 5) {
+      logger.debug('[SEARCH DEBUG] First few Fuse results:', fuseResults.slice(0, 5).map((r: any) => ({
+        id: r.item.id,
+        label: r.item.label,
+        type: r.item.type,
+        fuseScore: r.score
+      })))
+    }
 
-    // Optimized scoring: pre-calculate usage scores
+    // Improved scoring with multiple bonus types
     const usageCache = new Map<string, number>()
 
     const scored = fuseResults.map((result: any) => {
       const item = result.item
-      // Fuse score is 0 (perfect) to 1 (poor), invert it to 0-100
-      const fuzzyScore = (1 - (result.score || 0)) * 100
+      const labelLower = item.label.toLowerCase()
+      const keywordsLower = (item.keywords || []).map((k: string) => k.toLowerCase())
 
-      // Cache usage lookups
+      // Fuse score is 0 (perfect) to 1 (poor), invert it to 0-70
+      const fuzzyScore = (1 - (result.score || 0)) * 70
+
+      // Cache usage lookups (capped at 30)
       let usageScore = usageCache.get(item.id)
       if (usageScore === undefined) {
-        usageScore = Math.min(settingsManager.getUsage(item.id) || 0, 50)
+        usageScore = Math.min(settingsManager.getUsage(item.id) || 0, 30)
         usageCache.set(item.id, usageScore)
       }
 
+      // Exact match bonus: +50 points (label matches query exactly)
+      const exactMatchBonus = labelLower === q ? 50 : 0
+
+      // Prefix match bonus: +25 points (label starts with query)
+      const prefixMatchBonus = labelLower.startsWith(q) && labelLower !== q ? 25 : 0
+
+      // Keyword exact match bonus: +40 points (query matches any keyword exactly)
+      const keywordExactBonus = keywordsLower.includes(q) ? 40 : 0
+
+      // Word-start match bonus: +30 points (query matches start of any word in label)
+      const words = labelLower.split(/\s+/)
+      const wordStartBonus = words.some((word: string) => word.startsWith(q) && word !== q) ? 30 : 0
+
+      const totalScore = fuzzyScore + usageScore + exactMatchBonus + prefixMatchBonus + keywordExactBonus + wordStartBonus
+
       return {
         item,
-        score: fuzzyScore + usageScore
+        score: totalScore,
+        fuzzyScore,
+        usageScore,
+        exactMatchBonus,
+        prefixMatchBonus,
+        keywordExactBonus,
+        wordStartBonus
       }
     })
 
-    scored.sort((a: any, b: any) => b.score - a.score)
+    // Filter out weak matches: only keep results with meaningful relevance
+    // Minimum score of 40 ensures at least some match quality
+    // (fuzzyScore max 70 + bonuses, so 40 = ~57% fuzzy match or lower with bonuses)
+    const MIN_SCORE = 40
+    const filtered = scored.filter((s: any) => s.score >= MIN_SCORE)
+
+    logger.debug(`[SEARCH DEBUG] Filtered ${scored.length} scored results -> ${filtered.length} above threshold (min score: ${MIN_SCORE})`)
+
+    filtered.sort((a: any, b: any) => b.score - a.score)
 
     const elapsed = Date.now() - startTime
-    logger.debug(`get-suggestions ("${q}") took ${elapsed}ms, ${fuseResults.length} results`)
+    const finalResults = filtered.map((s: any) => ({ id: s.item.id, label: s.item.label, type: s.item.type }))
 
-    return scored.map((s: any) => ({ id: s.item.id, label: s.item.label, type: s.item.type }))
+    logger.debug(`[SEARCH DEBUG] Query: "${q}" - Final results count: ${finalResults.length}`)
+    if (finalResults.length > 0 && finalResults.length <= 10) {
+      logger.debug('[SEARCH DEBUG] Final results being sent to frontend:', finalResults)
+    } else if (finalResults.length > 10) {
+      logger.debug('[SEARCH DEBUG] First 10 final results:', finalResults.slice(0, 10))
+    }
+    logger.debug(`get - suggestions("${q}") took ${elapsed} ms, ${fuseResults.length} Fuse results -> ${filtered.length} filtered -> ${finalResults.length} final results`)
+
+    return finalResults
   })
+
 
   ipcMain.handle('get-preferences', () => settingsManager.getAll())
   ipcMain.handle('set-preferences', (_, prefs: any) => settingsManager.setAll(prefs))
@@ -313,7 +394,7 @@ export function registerIpcHandlers(widgetManager: WidgetManager, callbacks?: Ma
     if (window && !window.isDestroyed()) {
       const [currentWidth] = window.getContentSize()
       window.setContentSize(currentWidth, Math.max(height, 200)) // Minimum 200px
-      logger.debug(`Resized window to height: ${height}`)
+      logger.debug(`Resized window to height: ${height} `)
     }
   })
 

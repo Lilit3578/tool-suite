@@ -10,9 +10,11 @@ export interface WindowTypeConfig {
     backgroundColor?: string;
     frame: boolean;
     alwaysOnTop: boolean;
+    fullscreenable?: boolean;  // Prevent from becoming top-level fullscreen window
     resizable: boolean;
     skipTaskbar: boolean;
     blurDelay: number;
+    visibleOnAllWorkspaces?: boolean;  // For multi-space support
   };
 }
 
@@ -30,6 +32,7 @@ export const WINDOW_REGISTRY: Record<string, WindowTypeConfig> = {
       resizable: false,
       skipTaskbar: true,
       blurDelay: 0,
+      visibleOnAllWorkspaces: true,  // Stay on current space, don't switch to Home
     },
   },
   // Translator widget
@@ -42,9 +45,11 @@ export const WINDOW_REGISTRY: Record<string, WindowTypeConfig> = {
       backgroundColor: 'transparent',
       frame: false,
       alwaysOnTop: true,
+      fullscreenable: false,  // CRITICAL: Prevent from becoming top-level fullscreen window
       resizable: true,
       skipTaskbar: true,
       blurDelay: 0,
+      visibleOnAllWorkspaces: true,  // Stay on current space, don't switch
     },
   },
   // Currency converter window config
@@ -57,9 +62,11 @@ export const WINDOW_REGISTRY: Record<string, WindowTypeConfig> = {
       backgroundColor: '#f9fafb',
       frame: false,
       alwaysOnTop: true,
+      fullscreenable: false,  // CRITICAL: Prevent from becoming top-level fullscreen window
       resizable: false,  // Fixed size
       skipTaskbar: true,
       blurDelay: 200,
+      visibleOnAllWorkspaces: true,  // Stay on current space, don't switch
     },
   },
   // Clipboard history widget
@@ -75,6 +82,7 @@ export const WINDOW_REGISTRY: Record<string, WindowTypeConfig> = {
       resizable: false,
       skipTaskbar: true,
       blurDelay: 0,  // Immediate hide on blur
+      visibleOnAllWorkspaces: true,  // Stay on current space, don't switch
     },
   },
   // Action popover - NO LONGER NEEDED as separate window

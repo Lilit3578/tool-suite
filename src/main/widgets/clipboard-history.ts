@@ -10,6 +10,8 @@ export class ClipboardHistoryWidget implements Widget {
     id = 'clipboard-history'
     label = 'Clipboard History'
     icon = '📋'
+    keywords = ['clipboard', 'copy', 'paste', 'history', 'clip']
+    tags = ['utility', 'productivity']
     componentType = 'clipboard-history'
 
     // Window configuration - matches window-registry.ts

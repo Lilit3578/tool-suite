@@ -3,11 +3,11 @@ const esbuild = require("esbuild")
 const isWatch = process.argv.includes("--watch")
 
 const buildOptions = {
-  entryPoints: ["src/main/main.ts"],
+  entryPoints: ["src/main/index.ts"],
   bundle: true,
   platform: "node",
   external: ["electron"],
-  outfile: "dist/main/main.js",
+  outfile: "dist/main/index.js",
 }
 
 if (isWatch) {

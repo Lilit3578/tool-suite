@@ -134,7 +134,7 @@ function setupPaletteBlurHandler(window: BrowserWindow) {
       }
 
       blurTimeout = null
-    }, 100) // Reduced from 200ms for faster response
+    }, 50) // Reduced from 100ms to 50ms for instant response
   })
 
   // Cancel blur timeout if palette regains focus
@@ -184,21 +184,197 @@ async function createTranslatorWindow(selectedText: string) {
   const widget = widgetManager.getWidget('translator')
 
   if (translatorWindow && !translatorWindow.isDestroyed()) {
-    // Position at cursor
-    const { x, y } = screen.getCursorScreenPoint()
-    translatorWindow.setPosition(x, y, false)
-    translatorWindow.show()
-    translatorWindow.focus()
+    logger.info('[DEBUG TRANSLATOR] Reusing existing translator window')
+
+    // DEBUG: Log current window state
+    const [currentX, currentY] = translatorWindow.getPosition()
+    const isVisible = translatorWindow.isVisible()
+    logger.info(`[DEBUG TRANSLATOR] Window state BEFORE hide: position=(${currentX}, ${currentY}), visible=${isVisible}`)
+
+    // CRITICAL: Always hide first, then reposition, then show
+    // This ensures correct position for both new and reused windows
+    if (translatorWindow.isVisible()) {
+      logger.info('[DEBUG TRANSLATOR] Window is visible, hiding it first')
+      translatorWindow.hide()
+      const [afterHideX, afterHideY] = translatorWindow.getPosition()
+      logger.info(`[DEBUG TRANSLATOR] Window state AFTER hide: position=(${afterHideX}, ${afterHideY}), visible=${translatorWindow.isVisible()}`)
+      // Small delay after hiding to ensure macOS processes the hide
+      await new Promise(resolve => setTimeout(resolve, 10))
+    } else {
+      logger.info('[DEBUG TRANSLATOR] Window is NOT visible, skipping hide')
+    }
+
+    // CRITICAL: Use the stored display from Command Palette to ensure same space
+    // This ensures the widget appears on the same screen/space in full-screen mode
+    const storedDisplay = (global as any).currentPaletteDisplay
+    const cursor = screen.getCursorScreenPoint()
+    const display = storedDisplay || screen.getDisplayNearestPoint(cursor)
+    
+    if (storedDisplay) {
+      logger.info(`[DEBUG TRANSLATOR] Using stored display from palette: ${display.id}, bounds: ${JSON.stringify(display.bounds)}`)
+    } else {
+      logger.info(`[DEBUG TRANSLATOR] No stored display, using cursor display: ${display.id}`)
+    }
+    
+    // Position at cursor (but ensure it's within the stored display's bounds)
+    const { x, y } = cursor
+    logger.info(`[DEBUG TRANSLATOR] Cursor position: (${x}, ${y}), Display: ${display.id}`)
+    
+    // Ensure position is within the display bounds
+    const displayX = Math.max(display.bounds.x, Math.min(x, display.bounds.x + display.bounds.width - 100))
+    const displayY = Math.max(display.bounds.y, Math.min(y, display.bounds.y + display.bounds.height - 100))
+    
+    logger.info(`[DEBUG TRANSLATOR] About to set position to (${displayX}, ${displayY})`)
+    translatorWindow.setPosition(displayX, displayY, false)
+    const [afterSetX, afterSetY] = translatorWindow.getPosition()
+    logger.info(`[DEBUG TRANSLATOR] Window position AFTER setPosition: (${afterSetX}, ${afterSetY})`)
+
+      // CRITICAL: Force visibleOnAllWorkspaces MULTIPLE times to ensure macOS respects it
+      // macOS sometimes ignores the first call, so we call it multiple times with delays
+      ; (translatorWindow as any).setVisibleOnAllWorkspaces(true)
+    logger.info('[DEBUG TRANSLATOR] First call: Set visibleOnAllWorkspaces to true')
+    await new Promise(resolve => setTimeout(resolve, 20))
+
+      ; (translatorWindow as any).setVisibleOnAllWorkspaces(true)
+    logger.info('[DEBUG TRANSLATOR] Second call: Set visibleOnAllWorkspaces to true')
+    await new Promise(resolve => setTimeout(resolve, 20))
+
+    // Also ensure alwaysOnTop is set with 'pop-up-menu' level (CRITICAL for space switching fix)
+    translatorWindow.setAlwaysOnTop(true, 'pop-up-menu', 1)
+    logger.info('[DEBUG TRANSLATOR] Set alwaysOnTop to pop-up-menu level (same as palette)')
+
     // Update with new props
     translatorWindow.webContents.send('component-init', {
       type: 'translator',
       props: { selectedText },
     })
+
+    // CRITICAL: Hide the app before showing window to prevent activation
+    const { app } = require('electron')
+    if (process.platform === 'darwin') {
+      app.hide()
+      logger.info('[DEBUG TRANSLATOR] Hid app before showing window')
+      await new Promise(resolve => setTimeout(resolve, 20))
+    }
+
+    // CRITICAL: Use native macOS APIs to ensure window stays on current space
+    if (process.platform === 'darwin') {
+      try {
+        const nativeHandle = translatorWindow.getNativeWindowHandle()
+        if (nativeHandle && nativeHandle.readUInt32LE) {
+          const windowPtr = nativeHandle.readUInt32LE(0)
+          logger.info(`[DEBUG TRANSLATOR] Got native window handle: ${windowPtr}`)
+          
+          // Try to use Electron's internal APIs to set collection behavior
+          const collectionBehavior = 1 | 256
+          if (typeof (translatorWindow as any).setCollectionBehavior === 'function') {
+            (translatorWindow as any).setCollectionBehavior(collectionBehavior)
+            logger.info('[DEBUG TRANSLATOR] Set collection behavior via Electron API')
+          }
+        }
+      } catch (e) {
+        logger.warn('[DEBUG TRANSLATOR] Could not access native window:', e)
+      }
+    }
+
+    // CRITICAL: Match Command Palette behavior exactly
+    // 1. Set position BEFORE showing (like Command Palette does)
+    // 2. Ensure visibleOnAllWorkspaces is set BEFORE showing
+    // 3. Use showInactive() to prevent app activation
+    
+    // CRITICAL: Set visibleOnAllWorkspaces BEFORE any display checks/moves
+    // This must be done first to ensure macOS knows the window should be on all spaces
+    ;(translatorWindow as any).setVisibleOnAllWorkspaces(true)
+    await new Promise(resolve => setTimeout(resolve, 10))
+    
+    // CRITICAL: Ensure window is on the correct display BEFORE showing
+    // macOS may have "remembered" the window's original display, so we need to force it
+    // First, verify which display the current position is on
+    const [currentPosX, currentPosY] = translatorWindow.getPosition()
+    const currentDisplay = screen.getDisplayNearestPoint({ x: currentPosX, y: currentPosY })
+    
+    // If the window is on a different display than expected, move it first
+    if (currentDisplay.id !== display.id) {
+      logger.warn(`[DEBUG TRANSLATOR] Window is on display ${currentDisplay.id}, but should be on ${display.id}. Moving to correct display...`)
+      // Move window to the correct display by setting position relative to that display
+      translatorWindow.setPosition(displayX, displayY, false)
+      await new Promise(resolve => setTimeout(resolve, 50)) // Give macOS time to process the move
+      
+      // Verify it moved
+      const [afterMoveX, afterMoveY] = translatorWindow.getPosition()
+      const afterMoveDisplay = screen.getDisplayNearestPoint({ x: afterMoveX, y: afterMoveY })
+      if (afterMoveDisplay.id !== display.id) {
+        logger.warn(`[DEBUG TRANSLATOR] Window still on wrong display after move. Forcing position again...`)
+        // Force position multiple times
+        for (let i = 0; i < 3; i++) {
+          translatorWindow.setPosition(displayX, displayY, false)
+          await new Promise(resolve => setTimeout(resolve, 30))
+        }
+      }
+    } else {
+      // Window is on correct display, just ensure position is correct
+      translatorWindow.setPosition(displayX, displayY, false)
+      logger.info(`[DEBUG TRANSLATOR] Window already on correct display, set position: (${displayX}, ${displayY})`)
+    }
+    
+    // CRITICAL: Set position one more time right before showing to ensure it sticks
+    translatorWindow.setPosition(displayX, displayY, false)
+    await new Promise(resolve => setTimeout(resolve, 10))
+    logger.info(`[DEBUG TRANSLATOR] Final position set BEFORE show: (${displayX}, ${displayY})`)
+    
+    // CRITICAL: Show window with position already set (matching Command Palette behavior)
+    logger.info('[DEBUG TRANSLATOR] About to show window (inactive)')
+    translatorWindow.showInactive()
+    
+    // Immediately hide app again in case showInactive() activated it
+    if (process.platform === 'darwin') {
+      app.hide()
+      logger.info('[DEBUG TRANSLATOR] Hid app again after showInactive')
+    }
+    
+    // Immediately set visibleOnAllWorkspaces again after showing (for extra safety)
+    ;(translatorWindow as any).setVisibleOnAllWorkspaces(true)
+    logger.info('[DEBUG TRANSLATOR] Set visibleOnAllWorkspaces after showInactive')
+    
+    // Verify position is still correct after showing
+    const [afterShowX, afterShowY] = translatorWindow.getPosition()
+    logger.info(`[DEBUG TRANSLATOR] Window position AFTER show: (${afterShowX}, ${afterShowY}), visible=${translatorWindow.isVisible()}`)
+    logger.info(`[DEBUG TRANSLATOR] Expected position: (${displayX}, ${displayY}), Actual position: (${afterShowX}, ${afterShowY})`)
+
+    // Check if position changed (indicates space switch)
+    if (Math.abs(afterShowY - displayY) > 10) {
+      logger.warn(`[DEBUG TRANSLATOR] WARNING: Position changed significantly! This may indicate space switching. Expected Y: ${displayY}, Actual Y: ${afterShowY}, Delta: ${afterShowY - displayY}`)
+      
+      // If position changed, try to correct it by repositioning multiple times
+      logger.info('[DEBUG TRANSLATOR] Attempting to correct position...')
+      for (let i = 0; i < 5; i++) {
+        translatorWindow.setPosition(displayX, displayY, false)
+        await new Promise(resolve => setTimeout(resolve, 20))
+        const [currentX, currentY] = translatorWindow.getPosition()
+        if (Math.abs(currentY - displayY) < 5) {
+          logger.info(`[DEBUG TRANSLATOR] Position corrected after ${i + 1} attempts: (${currentX}, ${currentY})`)
+          break
+        }
+      }
+      const [correctedX, correctedY] = translatorWindow.getPosition()
+      logger.info(`[DEBUG TRANSLATOR] Final position after correction: (${correctedX}, ${correctedY})`)
+    } else if (Math.abs(afterShowX - displayX) > 5 || Math.abs(afterShowY - displayY) > 5) {
+      // Small correction for minor position changes
+      logger.info('[DEBUG TRANSLATOR] Minor position change detected, correcting...')
+      translatorWindow.setPosition(displayX, displayY, false)
+      await new Promise(resolve => setTimeout(resolve, 10))
+    }
+
+    // DO NOT call focus() - it triggers space switching!
+    // The window is already shown and is usable without focus
+    logger.info('[DEBUG TRANSLATOR] Window shown without focus (prevents space switching)')
+
     return translatorWindow
   }
 
   // Position at cursor before creating window
   const { x, y } = screen.getCursorScreenPoint()
+  logger.info(`[DEBUG TRANSLATOR] Creating new translator window at cursor: (${x}, ${y})`)
 
   // Use window factory
   translatorWindow = await createWindow({
@@ -208,7 +384,10 @@ async function createTranslatorWindow(selectedText: string) {
     props: { selectedText },
   })
 
+  logger.info(`[DEBUG TRANSLATOR] New translator window created`)
+
   translatorWindow.on('closed', () => {
+    logger.info('[DEBUG TRANSLATOR] Translator window closed')
     translatorWindow = null
   })
 
@@ -361,7 +540,7 @@ function setupActionPopoverBlurHandler(popoverWindow: BrowserWindow) {
       }
 
       popoverBlurTimeout = null
-    }, 100)
+    }, 50) // Reduced from 100ms to 50ms for instant response
   })
 
   // Cancel blur timeout if popover regains focus
@@ -419,9 +598,12 @@ app.on('ready', async () => {
 
   settingsManager.init({ translatorDefaultTarget: 'it' })
 
-  // Hide dock icon on macOS to make it feel like a utility
+  // CRITICAL: Use 'accessory' activation policy instead of dock.hide()
+  // This prevents the app from appearing in Dock AND prevents space switching
+  // when windows are shown. dock.hide() alone causes macOS to switch spaces.
   if (process.platform === 'darwin') {
-    app.dock.hide()
+    app.setActivationPolicy('accessory')
+    logger.info('Set app activation policy to accessory (prevents space switching)')
   }
 
   // Initialize clipboard manager
@@ -508,7 +690,14 @@ app.on('ready', async () => {
 
     // Get mouse position and screen bounds
     const cursor = screen.getCursorScreenPoint()
-    const display = screen.getDisplayNearestPoint(cursor)
+
+    // CRITICAL: Store the current display for widget windows
+    // This ensures widgets open on the same screen/space in full-screen mode
+    const currentDisplay = screen.getDisplayNearestPoint(cursor)
+    ;(global as any).currentPaletteDisplay = currentDisplay
+    logger.info(`[DEBUG] Stored current display: ${currentDisplay.id}, bounds: ${JSON.stringify(currentDisplay.bounds)}`)
+    // CRITICAL: Use the stored display, don't recalculate it
+    const display = currentDisplay
 
     // Palette dimensions
     const paletteWidth = 270
@@ -528,14 +717,37 @@ app.on('ready', async () => {
       // Ensure we don't go off-screen at the top
       windowY = Math.max(display.bounds.y, windowY)
       logger.info('Palette positioned above cursor (near bottom edge)', { cursor: cursor.y, windowY })
-    } else {
-      // Normal position at cursor
       logger.info('Palette positioned at cursor (normal)', { cursor: cursor.y, windowY })
     }
 
     const win = await createMainWindow()
-    // Set position and then show
+
+    // DEBUG: Log current window state
+    const [currentX, currentY] = win.getPosition()
+    logger.info(`[DEBUG] Window state BEFORE hide: position=(${currentX}, ${currentY}), visible=${win.isVisible()}`)
+
+    // CRITICAL: Always hide first, then reposition, then show
+    // This ensures correct position for both new and reused windows
+    if (win.isVisible()) {
+      logger.info('[DEBUG] Window is visible, hiding it first')
+      win.hide()
+      const [afterHideX, afterHideY] = win.getPosition()
+      logger.info(`[DEBUG] Window state AFTER hide: position=(${afterHideX}, ${afterHideY}), visible=${win.isVisible()}`)
+    } else {
+      logger.info('[DEBUG] Window is NOT visible, skipping hide')
+    }
+
+    // CRITICAL: Force visibleOnAllWorkspaces BEFORE showing to prevent space switching
+    // This must be called each time to override macOS's space memory
+    (win as any).setVisibleOnAllWorkspaces(true)
+    logger.info('[DEBUG] Set visibleOnAllWorkspaces to true')
+
+    // Set position at cursor (calculated above)
+    logger.info(`[DEBUG] About to set position to (${windowX}, ${windowY})`)
     win.setPosition(windowX, windowY, false)
+    const [afterSetX, afterSetY] = win.getPosition()
+    logger.info(`[DEBUG] Window position AFTER setPosition: (${afterSetX}, ${afterSetY})`)
+
     // Send component-init with palette type and captured text
     win.webContents.send('component-init', {
       type: 'palette',
@@ -543,8 +755,20 @@ app.on('ready', async () => {
     })
     // Also send legacy event for backward compatibility
     win.webContents.send('palette-opened', { capturedText })
-    win.show()
-    win.focus()
+
+    // Show window at new position WITHOUT activating (prevents space switch)
+    logger.info('[DEBUG] About to show window (inactive)')
+    win.showInactive()
+    const [afterShowX, afterShowY] = win.getPosition()
+    logger.info(`[DEBUG] Window position AFTER show: (${afterShowX}, ${afterShowY}), visible=${win.isVisible()}`)
+    logger.info(`[DEBUG] Expected position: (${windowX}, ${windowY}), Actual position: (${afterShowX}, ${afterShowY})`)
+
+    // CRITICAL: DO NOT call focus() - it triggers space switching!
+    // The window is already shown with showInactive() and is usable without focus
+    // Blur events will still fire when window loses focus, so we don't need to focus it
+    // If focus is absolutely required for some functionality, it should be done conditionally
+    // and only when not in full-screen mode
+    logger.info('[DEBUG] Window shown without focus (prevents space switching)')
   })
 
 
@@ -552,9 +776,10 @@ app.on('ready', async () => {
 })
 
 app.on('window-all-closed', () => {
-  if (process.platform !== 'darwin') {
-    app.quit()
-  }
+  // Don't quit on window close - we're a background utility
+  // The app stays running to handle global shortcuts
 })
 
-app.on('activate', async () => { await createMainWindow() })
+// REMOVED: app.on('activate') handler
+// Accessory apps should never activate, so we don't need this handler
+// Having it could cause space switching when widgets are shown

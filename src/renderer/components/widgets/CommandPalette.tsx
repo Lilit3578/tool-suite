@@ -134,6 +134,7 @@ export default function CommandPalette() {
   useEffect(() => {
     const onShow = async (_event: any, data?: { capturedText?: string }) => {
       setOpen(true)
+      setQuery("") // CRITICAL: Reset search query to empty on every open
       setSelectedActionId(null)
       setPopoverOpen(false) // Close popover when palette opens
 
@@ -173,8 +174,15 @@ export default function CommandPalette() {
 
     // Debounce search queries to reduce IPC calls
     debounceTimerRef.current = setTimeout(async () => {
+      console.log(`[FRONTEND DEBUG] Requesting suggestions for query: "${query}"`)
       const res = await window.electronAPI.getSuggestions(query || "")
-      if (active) setSuggestions(res)
+      console.log(`[FRONTEND DEBUG] Received ${res.length} suggestions from backend:`, res)
+      if (active) {
+        setSuggestions(res)
+        console.log('[FRONTEND DEBUG] Updated suggestions state')
+      } else {
+        console.log('[FRONTEND DEBUG] Component unmounted, ignoring results')
+      }
     }, query ? 150 : 0) // Immediate if empty query, 150ms delay for typed queries
 
     return () => {
@@ -324,19 +332,40 @@ export default function CommandPalette() {
   }, [capturedText, popoverOpen, selectedActionId, isNearRightEdge])
 
   // Memoize expensive filtering operations to prevent recalculation on every render
-  const suggestedItems = useMemo(() => suggestions.slice(0, 4), [suggestions])
+  const suggestedItems = useMemo(() => {
+    const items = suggestions.slice(0, 4)
+    console.log(`[FRONTEND DEBUG] suggestedItems (top 4):`, items)
+    return items
+  }, [suggestions])
+
   const suggestedIds = useMemo(() => new Set(suggestedItems.map(s => s.id)), [suggestedItems])
 
-  // Filter out items already shown in suggested - memoized
-  const actionItems = useMemo(() =>
-    suggestions.filter((s) => s.type === "action" && !suggestedIds.has(s.id)),
-    [suggestions, suggestedIds]
-  )
+  // CRITICAL FIX: Filter BOTH widgets and actions from suggestions (search results)
+  // Previously widgetItems filtered from static widgets array, causing search results to disappear
+  const actionItems = useMemo(() => {
+    const items = suggestions.filter((s) => s.type === "action" && !suggestedIds.has(s.id))
+      .sort((a, b) => a.label.localeCompare(b.label)) // Sort alphabetically
+    console.log(`[FRONTEND DEBUG] actionItems (${items.length}):`, items.map(i => i.label))
+    return items
+  }, [suggestions, suggestedIds])
 
-  const widgetItems = useMemo(() =>
-    widgets.filter((w) => !suggestedIds.has(w.id)),
-    [widgets, suggestedIds]
-  )
+  const widgetItems = useMemo(() => {
+    const items = suggestions.filter((s) => s.type === "widget" && !suggestedIds.has(s.id))
+      .sort((a, b) => a.label.localeCompare(b.label)) // Sort alphabetically
+    console.log(`[FRONTEND DEBUG] widgetItems (${items.length}):`, items.map(i => i.label))
+    return items
+  }, [suggestions, suggestedIds])
+
+  // Debug: Log rendering decision
+  console.log('[FRONTEND DEBUG] Rendering CommandPalette:', {
+    open,
+    query,
+    totalSuggestions: suggestions.length,
+    suggestedCount: suggestedItems.length,
+    widgetCount: widgetItems.length,
+    actionCount: actionItems.length,
+    willShowEmpty: suggestions.length === 0
+  })
 
   if (!open) return null
 
@@ -353,6 +382,7 @@ export default function CommandPalette() {
       {/* Command Palette */}
       <Command
         className="h-[328px] w-[270px]"
+        shouldFilter={false}  // CRITICAL: Disable built-in filtering - we use backend Fuse.js
         style={{
           position: 'absolute',
           left: 0,

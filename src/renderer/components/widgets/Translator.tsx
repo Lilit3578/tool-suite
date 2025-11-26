@@ -1,5 +1,5 @@
 // src/renderer/components/TranslatorWidget.tsx
-import React, { useEffect, useState } from "react"
+import React, { useEffect, useState, useRef } from "react"
 import { Card } from "../ui/card"
 import { Separator } from "../ui/separator"
 import { Textarea } from "../ui/textarea"
@@ -81,6 +81,7 @@ export default function TranslatorWidget(props?: TranslatorWidgetProps) {
   const [targetLang, setTargetLang] = useState("english")
   const [translated, setTranslated] = useState("")
   const [loading, setLoading] = useState(false)
+  const containerRef = useRef<HTMLDivElement>(null)
 
   // Initialize from props
   useEffect(() => {
@@ -117,6 +118,42 @@ export default function TranslatorWidget(props?: TranslatorWidgetProps) {
     return () => clearTimeout(id)
   }, [input, targetLang])
 
+  // Auto-size window height to hug content
+  useEffect(() => {
+    if (!containerRef.current) return
+
+    const resizeWindow = () => {
+      if (containerRef.current && window.electronAPI?.resizeWindow) {
+        // scrollHeight already includes padding, so use it directly
+        const height = containerRef.current.scrollHeight
+        const newHeight = Math.max(height, 300) // Minimum 300px
+        console.log('Translator: Resizing window', {
+          scrollHeight: height,
+          newHeight,
+          hasInput: !!input,
+          hasTranslation: !!translated
+        })
+        window.electronAPI.resizeWindow(newHeight)
+      }
+    }
+
+    // Initial resize with delay to ensure content is rendered
+    const timeoutId = setTimeout(resizeWindow, 150)
+
+    // Use ResizeObserver to watch for content changes
+    const resizeObserver = new ResizeObserver(() => {
+      console.log('Translator: ResizeObserver triggered')
+      resizeWindow()
+    })
+
+    resizeObserver.observe(containerRef.current)
+
+    return () => {
+      clearTimeout(timeoutId)
+      resizeObserver.disconnect()
+    }
+  }, [input, translated, loading, sourceLang, targetLang])
+
   async function translateText(text: string, tgt: string) {
     setLoading(true)
     try {
@@ -148,7 +185,7 @@ export default function TranslatorWidget(props?: TranslatorWidgetProps) {
   }
 
   return (
-    <Card className="w-full border border-ink-400 bg-ink-100 p-4 space-y-6 rounded-2xl">
+    <Card ref={containerRef} className="w-full border border-ink-400 bg-ink-100 p-4 space-y-6 rounded-2xl">
       {/* Header */}
       <h2 className="h2 italic">translator</h2>
       <Separator />
