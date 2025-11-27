@@ -22,11 +22,27 @@ import_electron.contextBridge.exposeInMainWorld("electronAPI", {
   pasteClipboardItem: (id) => import_electron.ipcRenderer.invoke("paste-clipboard-item", id),
   // Get window position for popover positioning
   getWindowPosition: () => import_electron.ipcRenderer.invoke("get-window-position"),
-  // Component rendering events
-  onComponentInit: (cb) => import_electron.ipcRenderer.on("component-init", cb),
-  // Legacy events for backward compatibility
-  onWidgetInit: (cb) => import_electron.ipcRenderer.on("widget-init", cb),
-  onPaletteOpened: (cb) => import_electron.ipcRenderer.on("palette-opened", cb),
+  // Component rendering events with cleanup support
+  onComponentInit: (cb) => {
+    import_electron.ipcRenderer.on("component-init", cb);
+    return () => import_electron.ipcRenderer.removeListener("component-init", cb);
+  },
+  // Legacy events for backward compatibility with cleanup support
+  onWidgetInit: (cb) => {
+    import_electron.ipcRenderer.on("widget-init", cb);
+    return () => import_electron.ipcRenderer.removeListener("widget-init", cb);
+  },
+  onPaletteOpened: (cb) => {
+    import_electron.ipcRenderer.on("palette-opened", cb);
+    return () => import_electron.ipcRenderer.removeListener("palette-opened", cb);
+  },
   hideCurrentWindow: () => import_electron.ipcRenderer.invoke("hide-current-window"),
-  onTranslatorInit: (cb) => import_electron.ipcRenderer.on("translator-init", cb)
+  onTranslatorInit: (cb) => {
+    import_electron.ipcRenderer.on("translator-init", cb);
+    return () => import_electron.ipcRenderer.removeListener("translator-init", cb);
+  },
+  onCurrencyConverterInit: (cb) => {
+    import_electron.ipcRenderer.on("currency-converter-init", cb);
+    return () => import_electron.ipcRenderer.removeListener("currency-converter-init", cb);
+  }
 });

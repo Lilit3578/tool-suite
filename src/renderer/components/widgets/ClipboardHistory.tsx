@@ -29,6 +29,7 @@ interface ClipboardHistoryProps {
 export default function ClipboardHistoryWidget({ items: initialItems }: ClipboardHistoryProps) {
     const [items, setItems] = useState<ClipboardItem[]>(initialItems || [])
     const commandRef = useRef<HTMLDivElement>(null)
+    const isPastingRef = useRef<boolean>(false)
 
     // Listen for component init
     useEffect(() => {
@@ -37,7 +38,12 @@ export default function ClipboardHistoryWidget({ items: initialItems }: Clipboar
                 setItems(data.props.items)
             }
         }
-        window.electronAPI.onComponentInit?.(onInit)
+        const cleanup = window.electronAPI.onComponentInit?.(onInit)
+        return () => {
+            if (typeof cleanup === 'function') {
+                cleanup()
+            }
+        }
     }, [])
 
     // Auto-focus the component when it mounts and notify window to resize
@@ -72,18 +78,35 @@ export default function ClipboardHistoryWidget({ items: initialItems }: Clipboar
 
     // Handle item selection and auto-paste
     const handleSelect = async (timestamp: number) => {
+        // Prevent multiple simultaneous paste operations
+        if (isPastingRef.current) {
+            console.log('Paste already in progress, ignoring duplicate request')
+            return
+        }
+
+        isPastingRef.current = true
         try {
             console.log('Pasting clipboard item:', timestamp)
+            // Paste will automatically close the window (handled by IPC handler)
             await window.electronAPI.pasteClipboardItem(timestamp.toString())
-            // Window will close automatically after paste
         } catch (error) {
             console.error('Error pasting clipboard item:', error)
+        } finally {
+            // Reset flag after a delay to allow paste operation to complete
+            setTimeout(() => {
+                isPastingRef.current = false
+            }, 500) // Reduced from 2000ms to 500ms for faster response
         }
     }
 
     // Keyboard shortcuts: 1-5 and Enter
     useEffect(() => {
         const handleKeyDown = (e: KeyboardEvent) => {
+            // Prevent handling if paste is already in progress
+            if (isPastingRef.current) {
+                return
+            }
+
             // Handle numeric shortcuts 1-5
             const num = parseInt(e.key, 10)
             if (num >= 1 && num <= 5 && items[num - 1]) {
@@ -137,7 +160,9 @@ export default function ClipboardHistoryWidget({ items: initialItems }: Clipboar
                     {items.map((item, index) => (
                         <CommandItem
                             key={item.timestamp}
-                            onSelect={() => handleSelect(item.timestamp)}
+                            onSelect={() => {
+                                handleSelect(item.timestamp)
+                            }}
                             className="cursor-pointer"
                             data-timestamp={item.timestamp}
                             title={item.text || item.preview}

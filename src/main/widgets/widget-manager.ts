@@ -104,36 +104,37 @@ export class WidgetManager {
           const storedDisplay = (global as any).currentPaletteDisplay
           const cursor = screen.getCursorScreenPoint()
           const display = storedDisplay || screen.getDisplayNearestPoint(cursor)
-          
+
           if (storedDisplay) {
             logger.info(`[DEBUG ${id.toUpperCase()}] Using stored display from palette: ${display.id}, bounds: ${JSON.stringify(display.bounds)}`)
           } else {
             logger.info(`[DEBUG ${id.toUpperCase()}] No stored display, using cursor display: ${display.id}`)
           }
-          
+
           logger.info(`[DEBUG ${id.toUpperCase()}] Cursor position: (${cursor.x}, ${cursor.y}), Display: ${display.id}`)
-          
+
           // Ensure position is within the stored display's bounds
           const displayX = Math.max(display.bounds.x, Math.min(cursor.x, display.bounds.x + display.bounds.width - 100))
           const displayY = Math.max(display.bounds.y, Math.min(cursor.y, display.bounds.y + display.bounds.height - 100))
-          
+
           logger.info(`[DEBUG ${id.toUpperCase()}] About to set position to (${displayX}, ${displayY})`)
           win.setPosition(displayX, displayY, false)
           const [afterSetX, afterSetY] = win.getPosition()
           logger.info(`[DEBUG ${id.toUpperCase()}] Window position AFTER setPosition: (${afterSetX}, ${afterSetY})`)
-          
+
           // Update cursor references to use display-adjusted coordinates
           const adjustedCursor = { x: displayX, y: displayY }
 
-            // CRITICAL: Force visibleOnAllWorkspaces MULTIPLE times to ensure macOS respects it
-            // macOS sometimes ignores the first call, so we call it multiple times with delays
+          // CRITICAL: Set visibleOnAllWorkspaces once with options (more reliable than multiple calls)
+          try {
+            ; (win as any).setVisibleOnAllWorkspaces(true, { visibleOnFullScreen: true })
+            logger.info(`[DEBUG ${id.toUpperCase()}] Set visibleOnAllWorkspaces with fullScreen option`)
+          } catch (e) {
             ; (win as any).setVisibleOnAllWorkspaces(true)
-          logger.info(`[DEBUG ${id.toUpperCase()}] First call: Set visibleOnAllWorkspaces to true`)
-          await new Promise(resolve => setTimeout(resolve, 20))
-
-            ; (win as any).setVisibleOnAllWorkspaces(true)
-          logger.info(`[DEBUG ${id.toUpperCase()}] Second call: Set visibleOnAllWorkspaces to true`)
-          await new Promise(resolve => setTimeout(resolve, 20))
+            logger.info(`[DEBUG ${id.toUpperCase()}] Set visibleOnAllWorkspaces (fallback)`)
+          }
+          // Single delay (reduced from 2x 20ms = 40ms to 30ms)
+          await new Promise(resolve => setTimeout(resolve, 30))
 
           // CRITICAL: Use 'pop-up-menu' level to match WindowFactory and prevent space switching
           win.setAlwaysOnTop(true, 'pop-up-menu', 1)
@@ -150,7 +151,8 @@ export class WidgetManager {
           if (process.platform === 'darwin') {
             app.hide()
             logger.info(`[DEBUG ${id.toUpperCase()}] Hid app before showing window`)
-            await new Promise(resolve => setTimeout(resolve, 20))
+            // Reduced delay - app.hide() is synchronous
+            await new Promise(resolve => setTimeout(resolve, 10))
           }
 
           // CRITICAL: Use native macOS APIs to ensure window stays on current space
@@ -160,7 +162,7 @@ export class WidgetManager {
               if (nativeHandle && nativeHandle.readUInt32LE) {
                 const windowPtr = nativeHandle.readUInt32LE(0)
                 logger.info(`[DEBUG ${id.toUpperCase()}] Got native window handle: ${windowPtr}`)
-                
+
                 // Try to use Electron's internal APIs to set collection behavior
                 const collectionBehavior = 1 | 256
                 if (typeof (win as any).setCollectionBehavior === 'function') {
@@ -177,97 +179,77 @@ export class WidgetManager {
           // 1. Set position BEFORE showing (like Command Palette does)
           // 2. Ensure visibleOnAllWorkspaces is set BEFORE showing
           // 3. Use showInactive() to prevent app activation
-          
-          // CRITICAL: Set visibleOnAllWorkspaces BEFORE any display checks/moves
-          // This must be done first to ensure macOS knows the window should be on all spaces
-          ;(win as any).setVisibleOnAllWorkspaces(true)
-          await new Promise(resolve => setTimeout(resolve, 10))
-          
-          // CRITICAL: Ensure window is on the correct display BEFORE showing
-          // macOS may have "remembered" the window's original display, so we need to force it
+
+          // CRITICAL: Batch window operations to reduce delays
+          // Set visibleOnAllWorkspaces and position together, then verify once
+          try {
+            ; (win as any).setVisibleOnAllWorkspaces(true, { visibleOnFullScreen: true })
+          } catch (e) {
+            ; (win as any).setVisibleOnAllWorkspaces(true)
+          }
+
+          // Set position and verify display in one pass
+          win.setPosition(displayX, displayY, false)
           const [currentPosX, currentPosY] = win.getPosition()
           const currentDisplay = screen.getDisplayNearestPoint({ x: currentPosX, y: currentPosY })
           const expectedDisplay = storedDisplay || screen.getDisplayNearestPoint(cursor)
-          
-          // If the window is on a different display than expected, move it first
+
+          // Only correct if on wrong display (reduced from multiple verification loops)
           if (currentDisplay.id !== expectedDisplay.id) {
-            logger.warn(`[DEBUG ${id.toUpperCase()}] Window is on display ${currentDisplay.id}, but should be on ${expectedDisplay.id}. Moving to correct display...`)
-            // Move window to the correct display by setting position relative to that display
+            logger.warn(`[DEBUG ${id.toUpperCase()}] Window on wrong display ${currentDisplay.id}, correcting to ${expectedDisplay.id}`)
             win.setPosition(displayX, displayY, false)
-            await new Promise(resolve => setTimeout(resolve, 50)) // Give macOS time to process the move
-            
-            // Verify it moved
-            const [afterMoveX, afterMoveY] = win.getPosition()
-            const afterMoveDisplay = screen.getDisplayNearestPoint({ x: afterMoveX, y: afterMoveY })
-            if (afterMoveDisplay.id !== expectedDisplay.id) {
-              logger.warn(`[DEBUG ${id.toUpperCase()}] Window still on wrong display after move. Forcing position again...`)
-              // Force position multiple times
-              for (let i = 0; i < 3; i++) {
-                win.setPosition(displayX, displayY, false)
-                await new Promise(resolve => setTimeout(resolve, 30))
-              }
-            }
-          } else {
-            // Window is on correct display, just ensure position is correct
-            win.setPosition(displayX, displayY, false)
-            logger.info(`[DEBUG ${id.toUpperCase()}] Window already on correct display, set position: (${displayX}, ${displayY})`)
+            // Single delay for display correction (reduced from 50ms + 3x 30ms = 140ms to 40ms)
+            await new Promise(resolve => setTimeout(resolve, 40))
           }
-          
-          // CRITICAL: Set position one more time right before showing to ensure it sticks
-          win.setPosition(displayX, displayY, false)
-          await new Promise(resolve => setTimeout(resolve, 10))
-          logger.info(`[DEBUG ${id.toUpperCase()}] Final position set BEFORE show: (${displayX}, ${displayY})`)
-          
+
+          logger.info(`[DEBUG ${id.toUpperCase()}] Position set: (${displayX}, ${displayY})`)
+
           // CRITICAL: Show window with position already set (matching Command Palette behavior)
           logger.info(`[DEBUG ${id.toUpperCase()}] About to show window (inactive)`)
           win.showInactive()
-          
+
           // Immediately hide app again in case showInactive() activated it
           if (process.platform === 'darwin') {
             app.hide()
             logger.info(`[DEBUG ${id.toUpperCase()}] Hid app again after showInactive`)
           }
-          
+
           // Immediately set visibleOnAllWorkspaces again after showing (for extra safety)
-          ;(win as any).setVisibleOnAllWorkspaces(true)
+          ; (win as any).setVisibleOnAllWorkspaces(true)
           logger.info(`[DEBUG ${id.toUpperCase()}] Set visibleOnAllWorkspaces after showInactive`)
-          
+
           // Verify position is still correct after showing
           const [afterShowX, afterShowY] = win.getPosition()
           logger.info(`[DEBUG ${id.toUpperCase()}] Window position AFTER show: (${afterShowX}, ${afterShowY}), visible=${win.isVisible()}`)
           logger.info(`[DEBUG ${id.toUpperCase()}] Expected position: (${displayX}, ${displayY}), Actual position: (${afterShowX}, ${afterShowY})`)
 
-          // Check if position changed (indicates space switch)
-          if (Math.abs(afterShowY - displayY) > 10) {
-            logger.warn(`[DEBUG ${id.toUpperCase()}] WARNING: Position changed significantly! This may indicate space switching. Expected Y: ${displayY}, Actual Y: ${afterShowY}, Delta: ${afterShowY - displayY}`)
-            
-            // If position changed, try to correct it by repositioning multiple times
-            logger.info(`[DEBUG ${id.toUpperCase()}] Attempting to correct position...`)
-            for (let i = 0; i < 5; i++) {
-              win.setPosition(displayX, displayY, false)
-              await new Promise(resolve => setTimeout(resolve, 20))
-              const [currentX, currentY] = win.getPosition()
-              if (Math.abs(currentY - displayY) < 5) {
-                logger.info(`[DEBUG ${id.toUpperCase()}] Position corrected after ${i + 1} attempts: (${currentX}, ${currentY})`)
-                break
-              }
-            }
-            const [correctedX, correctedY] = win.getPosition()
-            logger.info(`[DEBUG ${id.toUpperCase()}] Final position after correction: (${correctedX}, ${correctedY})`)
-          } else if (Math.abs(afterShowX - displayX) > 5 || Math.abs(afterShowY - displayY) > 5) {
-            // Small correction for minor position changes
-            logger.info(`[DEBUG ${id.toUpperCase()}] Minor position change detected, correcting...`)
+          // Verify position with tolerance (reduced from 5 attempts to single check)
+          const positionTolerance = 10
+          if (Math.abs(afterShowX - displayX) > positionTolerance || Math.abs(afterShowY - displayY) > positionTolerance) {
+            logger.warn(`[DEBUG ${id.toUpperCase()}] Position off by (${afterShowX - displayX}, ${afterShowY - displayY}), correcting...`)
             win.setPosition(displayX, displayY, false)
-            await new Promise(resolve => setTimeout(resolve, 10))
+            // Single correction attempt (reduced from 5x 20ms = 100ms to 30ms)
+            await new Promise(resolve => setTimeout(resolve, 30))
           }
 
-          // DO NOT call focus() - it triggers space switching!
-          // The window is already shown and is usable without focus
-          logger.info(`[DEBUG ${id.toUpperCase()}] Window shown without focus (prevents space switching)`)
+          // Focus window after a short delay to ensure it's fully shown
+          // This prevents space switching while still giving the window focus
+          setTimeout(() => {
+            if (!win.isDestroyed() && win.isVisible()) {
+              win.focus()
+              logger.info(`[DEBUG ${id.toUpperCase()}] Window focused after delay`)
+            }
+          }, 100)
+          logger.info(`[DEBUG ${id.toUpperCase()}] Window shown, will focus after delay`)
         } else {
           // Normal windows - show and focus immediately
           win.show()
-          win.focus()
+          // Focus after a short delay to ensure window is ready
+          setTimeout(() => {
+            if (!win.isDestroyed() && win.isVisible()) {
+              win.focus()
+            }
+          }, 50)
           // Update with new props
           win.webContents.send('component-init', {
             type: widget.componentType || id,
@@ -298,6 +280,10 @@ export class WidgetManager {
     })
 
     win.on('closed', () => {
+      // Clean up all listeners before removing from map
+      if (win && !win.isDestroyed()) {
+        win.removeAllListeners()
+      }
       this.windows.delete(id)
     })
 
@@ -309,13 +295,38 @@ export class WidgetManager {
   closeWidgetWindow(id: string) {
     const win = this.windows.get(id)
     if (win) {
-      win.close()
+      if (!win.isDestroyed()) {
+        win.removeAllListeners()
+        win.close()
+      }
       this.windows.delete(id)
     }
   }
 
+  /**
+   * Close clipboard history window immediately
+   * Used by IPC handler to close window before paste operation
+   * Returns true if window was found and closed, false otherwise
+   */
+  closeClipboardHistoryWindow(): boolean {
+    const win = this.windows.get('clipboard-history')
+    if (win && !win.isDestroyed()) {
+      logger.info('Closing clipboard history window for paste operation')
+      win.close()
+      this.windows.delete('clipboard-history')
+      return true
+    }
+    logger.warn('Clipboard history window not found or already destroyed')
+    return false
+  }
+
   closeAll() {
-    for (const win of this.windows.values()) win.close()
+    for (const win of this.windows.values()) {
+      if (!win.isDestroyed()) {
+        win.removeAllListeners()
+        win.destroy()
+      }
+    }
     this.windows.clear()
   }
 }

@@ -492,14 +492,24 @@ export async function createWindow(options: WindowCreationOptions): Promise<Brow
         await new Promise(resolve => setTimeout(resolve, 10))
       }
 
-      // DO NOT call focus() - it triggers space switching!
-      // The window is already shown and is usable without focus
-      logger.info(`[DEBUG ${widgetId.toUpperCase()}] Window shown without focus (prevents space switching)`)
+      // Focus window after a short delay to ensure it's fully shown
+      // This prevents space switching while still giving the window focus
+      setTimeout(() => {
+        if (!win.isDestroyed() && win.isVisible()) {
+          win.focus()
+          logger.info(`[DEBUG ${widgetId.toUpperCase()}] Window focused after delay`)
+        }
+      }, 100)
+      logger.info(`[DEBUG ${widgetId.toUpperCase()}] Window shown, will focus after delay`)
     } else {
-      // Normal windows - show and focus
+      // Normal windows - show and focus after delay
       win.show()
-      win.focus()
-      console.log('Window shown and focused')
+      setTimeout(() => {
+        if (!win.isDestroyed() && win.isVisible()) {
+          win.focus()
+        }
+      }, 50)
+      console.log('Window shown, will focus after delay')
     }
   }
 

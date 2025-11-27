@@ -239,20 +239,20 @@
           {
             Object.freeze(emptyObject);
           }
-          function Component(props, context, updater) {
+          function Component2(props, context, updater) {
             this.props = props;
             this.context = context;
             this.refs = emptyObject;
             this.updater = updater || ReactNoopUpdateQueue;
           }
-          Component.prototype.isReactComponent = {};
-          Component.prototype.setState = function(partialState, callback) {
+          Component2.prototype.isReactComponent = {};
+          Component2.prototype.setState = function(partialState, callback) {
             if (typeof partialState !== "object" && typeof partialState !== "function" && partialState != null) {
               throw new Error("setState(...): takes an object of state variables to update or a function which returns an object of state variables.");
             }
             this.updater.enqueueSetState(this, partialState, callback, "setState");
           };
-          Component.prototype.forceUpdate = function(callback) {
+          Component2.prototype.forceUpdate = function(callback) {
             this.updater.enqueueForceUpdate(this, callback, "forceUpdate");
           };
           {
@@ -261,7 +261,7 @@
               replaceState: ["replaceState", "Refactor your code to use setState instead (see https://github.com/facebook/react/issues/3236)."]
             };
             var defineDeprecationWarning = function(methodName, info) {
-              Object.defineProperty(Component.prototype, methodName, {
+              Object.defineProperty(Component2.prototype, methodName, {
                 get: function() {
                   warn("%s(...) is deprecated in plain JavaScript React classes. %s", info[0], info[1]);
                   return void 0;
@@ -276,7 +276,7 @@
           }
           function ComponentDummy() {
           }
-          ComponentDummy.prototype = Component.prototype;
+          ComponentDummy.prototype = Component2.prototype;
           function PureComponent(props, context, updater) {
             this.props = props;
             this.context = context;
@@ -285,7 +285,7 @@
           }
           var pureComponentPrototype = PureComponent.prototype = new ComponentDummy();
           pureComponentPrototype.constructor = PureComponent;
-          assign(pureComponentPrototype, Component.prototype);
+          assign(pureComponentPrototype, Component2.prototype);
           pureComponentPrototype.isPureReactComponent = true;
           function createRef() {
             var refObject = {
@@ -1350,8 +1350,8 @@
               return describeNativeComponentFrame(fn, false);
             }
           }
-          function shouldConstruct(Component2) {
-            var prototype = Component2.prototype;
+          function shouldConstruct(Component3) {
+            var prototype = Component3.prototype;
             return !!(prototype && prototype.isReactComponent);
           }
           function describeUnknownElementTypeFrameInDEV(type, source, ownerFn) {
@@ -1857,7 +1857,7 @@
             only: onlyChild
           };
           exports.Children = Children8;
-          exports.Component = Component;
+          exports.Component = Component2;
           exports.Fragment = REACT_FRAGMENT_TYPE;
           exports.Profiler = REACT_PROFILER_TYPE;
           exports.PureComponent = PureComponent;
@@ -2384,9 +2384,9 @@
           if (typeof __REACT_DEVTOOLS_GLOBAL_HOOK__ !== "undefined" && typeof __REACT_DEVTOOLS_GLOBAL_HOOK__.registerInternalModuleStart === "function") {
             __REACT_DEVTOOLS_GLOBAL_HOOK__.registerInternalModuleStart(new Error());
           }
-          var React48 = require_react();
+          var React49 = require_react();
           var Scheduler = require_scheduler();
-          var ReactSharedInternals = React48.__SECRET_INTERNALS_DO_NOT_USE_OR_YOU_WILL_BE_FIRED;
+          var ReactSharedInternals = React49.__SECRET_INTERNALS_DO_NOT_USE_OR_YOU_WILL_BE_FIRED;
           var suppressWarning = false;
           function setSuppressWarning(newSuppressWarning) {
             {
@@ -2435,7 +2435,7 @@
           var HostPortal = 4;
           var HostComponent = 5;
           var HostText = 6;
-          var Fragment9 = 7;
+          var Fragment10 = 7;
           var Mode = 8;
           var ContextConsumer = 9;
           var ContextProvider = 10;
@@ -3421,8 +3421,8 @@
               return describeNativeComponentFrame(fn, false);
             }
           }
-          function shouldConstruct(Component) {
-            var prototype = Component.prototype;
+          function shouldConstruct(Component2) {
+            var prototype = Component2.prototype;
             return !!(prototype && prototype.isReactComponent);
           }
           function describeUnknownElementTypeFrameInDEV(type, source, ownerFn) {
@@ -3591,7 +3591,7 @@
                 return "DehydratedFragment";
               case ForwardRef:
                 return getWrappedName$1(type, type.render, "ForwardRef");
-              case Fragment9:
+              case Fragment10:
                 return "Fragment";
               case HostComponent:
                 return type;
@@ -3991,7 +3991,7 @@
             {
               if (props.value == null) {
                 if (typeof props.children === "object" && props.children !== null) {
-                  React48.Children.forEach(props.children, function(child) {
+                  React49.Children.forEach(props.children, function(child) {
                     if (child == null) {
                       return;
                     }
@@ -10855,9 +10855,9 @@
           var contextStackCursor = createCursor(emptyContextObject);
           var didPerformWorkStackCursor = createCursor(false);
           var previousContext = emptyContextObject;
-          function getUnmaskedContext(workInProgress2, Component, didPushOwnContextIfProvider) {
+          function getUnmaskedContext(workInProgress2, Component2, didPushOwnContextIfProvider) {
             {
-              if (didPushOwnContextIfProvider && isContextProvider(Component)) {
+              if (didPushOwnContextIfProvider && isContextProvider(Component2)) {
                 return previousContext;
               }
               return contextStackCursor.current;
@@ -10994,8 +10994,8 @@
                   case HostRoot:
                     return node.stateNode.context;
                   case ClassComponent: {
-                    var Component = node.type;
-                    if (isContextProvider(Component)) {
+                    var Component2 = node.type;
+                    if (isContextProvider(Component2)) {
                       return node.stateNode.__reactInternalMemoizedMergedChildContext;
                     }
                     break;
@@ -11992,7 +11992,7 @@
               }
             }
             function updateFragment2(returnFiber, current2, fragment, lanes, key) {
-              if (current2 === null || current2.tag !== Fragment9) {
+              if (current2 === null || current2.tag !== Fragment10) {
                 var created = createFiberFromFragment(fragment, returnFiber.mode, lanes, key);
                 created.return = returnFiber;
                 return created;
@@ -12395,7 +12395,7 @@
                 if (child.key === key) {
                   var elementType = element.type;
                   if (elementType === REACT_FRAGMENT_TYPE) {
-                    if (child.tag === Fragment9) {
+                    if (child.tag === Fragment10) {
                       deleteRemainingChildren(returnFiber, child.sibling);
                       var existing = useFiber(child, element.props.children);
                       existing.return = returnFiber;
@@ -13452,7 +13452,7 @@
             }
             return true;
           }
-          function renderWithHooks(current2, workInProgress2, Component, props, secondArg, nextRenderLanes) {
+          function renderWithHooks(current2, workInProgress2, Component2, props, secondArg, nextRenderLanes) {
             renderLanes = nextRenderLanes;
             currentlyRenderingFiber$1 = workInProgress2;
             {
@@ -13472,7 +13472,7 @@
                 ReactCurrentDispatcher$1.current = HooksDispatcherOnMountInDEV;
               }
             }
-            var children = Component(props, secondArg);
+            var children = Component2(props, secondArg);
             if (didScheduleRenderPhaseUpdateDuringThisPass) {
               var numberOfReRenders = 0;
               do {
@@ -13492,7 +13492,7 @@
                   hookTypesUpdateIndexDev = -1;
                 }
                 ReactCurrentDispatcher$1.current = HooksDispatcherOnRerenderInDEV;
-                children = Component(props, secondArg);
+                children = Component2(props, secondArg);
               } while (didScheduleRenderPhaseUpdateDuringThisPass);
             }
             ReactCurrentDispatcher$1.current = ContextOnlyDispatcher;
@@ -15291,10 +15291,10 @@
               child = child.sibling;
             }
           }
-          function resolveDefaultProps(Component, baseProps) {
-            if (Component && Component.defaultProps) {
+          function resolveDefaultProps(Component2, baseProps) {
+            if (Component2 && Component2.defaultProps) {
               var props = assign({}, baseProps);
-              var defaultProps = Component.defaultProps;
+              var defaultProps = Component2.defaultProps;
               for (var propName in defaultProps) {
                 if (props[propName] === void 0) {
                   props[propName] = defaultProps[propName];
@@ -16223,22 +16223,22 @@
             workInProgress2.child = reconcileChildFibers(workInProgress2, current2.child, null, renderLanes2);
             workInProgress2.child = reconcileChildFibers(workInProgress2, null, nextChildren, renderLanes2);
           }
-          function updateForwardRef(current2, workInProgress2, Component, nextProps, renderLanes2) {
+          function updateForwardRef(current2, workInProgress2, Component2, nextProps, renderLanes2) {
             {
               if (workInProgress2.type !== workInProgress2.elementType) {
-                var innerPropTypes = Component.propTypes;
+                var innerPropTypes = Component2.propTypes;
                 if (innerPropTypes) {
                   checkPropTypes(
                     innerPropTypes,
                     nextProps,
                     // Resolved props
                     "prop",
-                    getComponentNameFromType(Component)
+                    getComponentNameFromType(Component2)
                   );
                 }
               }
             }
-            var render2 = Component.render;
+            var render2 = Component2.render;
             var ref = workInProgress2.ref;
             var nextChildren;
             var hasId;
@@ -16276,11 +16276,11 @@
             reconcileChildren(current2, workInProgress2, nextChildren, renderLanes2);
             return workInProgress2.child;
           }
-          function updateMemoComponent(current2, workInProgress2, Component, nextProps, renderLanes2) {
+          function updateMemoComponent(current2, workInProgress2, Component2, nextProps, renderLanes2) {
             if (current2 === null) {
-              var type = Component.type;
-              if (isSimpleFunctionComponent(type) && Component.compare === null && // SimpleMemoComponent codepath doesn't resolve outer props either.
-              Component.defaultProps === void 0) {
+              var type = Component2.type;
+              if (isSimpleFunctionComponent(type) && Component2.compare === null && // SimpleMemoComponent codepath doesn't resolve outer props either.
+              Component2.defaultProps === void 0) {
                 var resolvedType = type;
                 {
                   resolvedType = resolveFunctionForHotReloading(type);
@@ -16303,7 +16303,7 @@
                     getComponentNameFromType(type)
                   );
                 }
-                if (Component.defaultProps !== void 0) {
+                if (Component2.defaultProps !== void 0) {
                   var componentName = getComponentNameFromType(type) || "Unknown";
                   if (!didWarnAboutDefaultPropsOnFunctionComponent[componentName]) {
                     error("%s: Support for defaultProps will be removed from memo components in a future major release. Use JavaScript default parameters instead.", componentName);
@@ -16311,14 +16311,14 @@
                   }
                 }
               }
-              var child = createFiberFromTypeAndProps(Component.type, null, nextProps, workInProgress2, workInProgress2.mode, renderLanes2);
+              var child = createFiberFromTypeAndProps(Component2.type, null, nextProps, workInProgress2, workInProgress2.mode, renderLanes2);
               child.ref = workInProgress2.ref;
               child.return = workInProgress2;
               workInProgress2.child = child;
               return child;
             }
             {
-              var _type = Component.type;
+              var _type = Component2.type;
               var _innerPropTypes = _type.propTypes;
               if (_innerPropTypes) {
                 checkPropTypes(
@@ -16334,7 +16334,7 @@
             var hasScheduledUpdateOrContext = checkScheduledUpdateOrContext(current2, renderLanes2);
             if (!hasScheduledUpdateOrContext) {
               var prevProps = currentChild.memoizedProps;
-              var compare = Component.compare;
+              var compare = Component2.compare;
               compare = compare !== null ? compare : shallowEqual;
               if (compare(prevProps, nextProps) && current2.ref === workInProgress2.ref) {
                 return bailoutOnAlreadyFinishedWork(current2, workInProgress2, renderLanes2);
@@ -16347,7 +16347,7 @@
             workInProgress2.child = newChild;
             return newChild;
           }
-          function updateSimpleMemoComponent(current2, workInProgress2, Component, nextProps, renderLanes2) {
+          function updateSimpleMemoComponent(current2, workInProgress2, Component2, nextProps, renderLanes2) {
             {
               if (workInProgress2.type !== workInProgress2.elementType) {
                 var outerMemoType = workInProgress2.elementType;
@@ -16387,7 +16387,7 @@
                 }
               }
             }
-            return updateFunctionComponent(current2, workInProgress2, Component, nextProps, renderLanes2);
+            return updateFunctionComponent(current2, workInProgress2, Component2, nextProps, renderLanes2);
           }
           function updateOffscreenComponent(current2, workInProgress2, renderLanes2) {
             var nextProps = workInProgress2.pendingProps;
@@ -16477,24 +16477,24 @@
               }
             }
           }
-          function updateFunctionComponent(current2, workInProgress2, Component, nextProps, renderLanes2) {
+          function updateFunctionComponent(current2, workInProgress2, Component2, nextProps, renderLanes2) {
             {
               if (workInProgress2.type !== workInProgress2.elementType) {
-                var innerPropTypes = Component.propTypes;
+                var innerPropTypes = Component2.propTypes;
                 if (innerPropTypes) {
                   checkPropTypes(
                     innerPropTypes,
                     nextProps,
                     // Resolved props
                     "prop",
-                    getComponentNameFromType(Component)
+                    getComponentNameFromType(Component2)
                   );
                 }
               }
             }
             var context;
             {
-              var unmaskedContext = getUnmaskedContext(workInProgress2, Component, true);
+              var unmaskedContext = getUnmaskedContext(workInProgress2, Component2, true);
               context = getMaskedContext(workInProgress2, unmaskedContext);
             }
             var nextChildren;
@@ -16506,12 +16506,12 @@
             {
               ReactCurrentOwner$1.current = workInProgress2;
               setIsRendering(true);
-              nextChildren = renderWithHooks(current2, workInProgress2, Component, nextProps, context, renderLanes2);
+              nextChildren = renderWithHooks(current2, workInProgress2, Component2, nextProps, context, renderLanes2);
               hasId = checkDidRenderIdHook();
               if (workInProgress2.mode & StrictLegacyMode) {
                 setIsStrictModeForDevtools(true);
                 try {
-                  nextChildren = renderWithHooks(current2, workInProgress2, Component, nextProps, context, renderLanes2);
+                  nextChildren = renderWithHooks(current2, workInProgress2, Component2, nextProps, context, renderLanes2);
                   hasId = checkDidRenderIdHook();
                 } finally {
                   setIsStrictModeForDevtools(false);
@@ -16533,7 +16533,7 @@
             reconcileChildren(current2, workInProgress2, nextChildren, renderLanes2);
             return workInProgress2.child;
           }
-          function updateClassComponent(current2, workInProgress2, Component, nextProps, renderLanes2) {
+          function updateClassComponent(current2, workInProgress2, Component2, nextProps, renderLanes2) {
             {
               switch (shouldError(workInProgress2)) {
                 case false: {
@@ -16556,20 +16556,20 @@
                 }
               }
               if (workInProgress2.type !== workInProgress2.elementType) {
-                var innerPropTypes = Component.propTypes;
+                var innerPropTypes = Component2.propTypes;
                 if (innerPropTypes) {
                   checkPropTypes(
                     innerPropTypes,
                     nextProps,
                     // Resolved props
                     "prop",
-                    getComponentNameFromType(Component)
+                    getComponentNameFromType(Component2)
                   );
                 }
               }
             }
             var hasContext;
-            if (isContextProvider(Component)) {
+            if (isContextProvider(Component2)) {
               hasContext = true;
               pushContextProvider(workInProgress2);
             } else {
@@ -16580,15 +16580,15 @@
             var shouldUpdate;
             if (instance === null) {
               resetSuspendedCurrentOnMountInLegacyMode(current2, workInProgress2);
-              constructClassInstance(workInProgress2, Component, nextProps);
-              mountClassInstance(workInProgress2, Component, nextProps, renderLanes2);
+              constructClassInstance(workInProgress2, Component2, nextProps);
+              mountClassInstance(workInProgress2, Component2, nextProps, renderLanes2);
               shouldUpdate = true;
             } else if (current2 === null) {
-              shouldUpdate = resumeMountClassInstance(workInProgress2, Component, nextProps, renderLanes2);
+              shouldUpdate = resumeMountClassInstance(workInProgress2, Component2, nextProps, renderLanes2);
             } else {
-              shouldUpdate = updateClassInstance(current2, workInProgress2, Component, nextProps, renderLanes2);
+              shouldUpdate = updateClassInstance(current2, workInProgress2, Component2, nextProps, renderLanes2);
             }
-            var nextUnitOfWork = finishClassComponent(current2, workInProgress2, Component, shouldUpdate, hasContext, renderLanes2);
+            var nextUnitOfWork = finishClassComponent(current2, workInProgress2, Component2, shouldUpdate, hasContext, renderLanes2);
             {
               var inst = workInProgress2.stateNode;
               if (shouldUpdate && inst.props !== nextProps) {
@@ -16600,19 +16600,19 @@
             }
             return nextUnitOfWork;
           }
-          function finishClassComponent(current2, workInProgress2, Component, shouldUpdate, hasContext, renderLanes2) {
+          function finishClassComponent(current2, workInProgress2, Component2, shouldUpdate, hasContext, renderLanes2) {
             markRef(current2, workInProgress2);
             var didCaptureError = (workInProgress2.flags & DidCapture) !== NoFlags;
             if (!shouldUpdate && !didCaptureError) {
               if (hasContext) {
-                invalidateContextProvider(workInProgress2, Component, false);
+                invalidateContextProvider(workInProgress2, Component2, false);
               }
               return bailoutOnAlreadyFinishedWork(current2, workInProgress2, renderLanes2);
             }
             var instance = workInProgress2.stateNode;
             ReactCurrentOwner$1.current = workInProgress2;
             var nextChildren;
-            if (didCaptureError && typeof Component.getDerivedStateFromError !== "function") {
+            if (didCaptureError && typeof Component2.getDerivedStateFromError !== "function") {
               nextChildren = null;
               {
                 stopProfilerTimerIfRunning();
@@ -16646,7 +16646,7 @@
             }
             workInProgress2.memoizedState = instance.state;
             if (hasContext) {
-              invalidateContextProvider(workInProgress2, Component, true);
+              invalidateContextProvider(workInProgress2, Component2, true);
             }
             return workInProgress2.child;
           }
@@ -16746,45 +16746,45 @@
             var lazyComponent = elementType;
             var payload = lazyComponent._payload;
             var init = lazyComponent._init;
-            var Component = init(payload);
-            workInProgress2.type = Component;
-            var resolvedTag = workInProgress2.tag = resolveLazyComponentTag(Component);
-            var resolvedProps = resolveDefaultProps(Component, props);
+            var Component2 = init(payload);
+            workInProgress2.type = Component2;
+            var resolvedTag = workInProgress2.tag = resolveLazyComponentTag(Component2);
+            var resolvedProps = resolveDefaultProps(Component2, props);
             var child;
             switch (resolvedTag) {
               case FunctionComponent: {
                 {
-                  validateFunctionComponentInDev(workInProgress2, Component);
-                  workInProgress2.type = Component = resolveFunctionForHotReloading(Component);
+                  validateFunctionComponentInDev(workInProgress2, Component2);
+                  workInProgress2.type = Component2 = resolveFunctionForHotReloading(Component2);
                 }
-                child = updateFunctionComponent(null, workInProgress2, Component, resolvedProps, renderLanes2);
+                child = updateFunctionComponent(null, workInProgress2, Component2, resolvedProps, renderLanes2);
                 return child;
               }
               case ClassComponent: {
                 {
-                  workInProgress2.type = Component = resolveClassForHotReloading(Component);
+                  workInProgress2.type = Component2 = resolveClassForHotReloading(Component2);
                 }
-                child = updateClassComponent(null, workInProgress2, Component, resolvedProps, renderLanes2);
+                child = updateClassComponent(null, workInProgress2, Component2, resolvedProps, renderLanes2);
                 return child;
               }
               case ForwardRef: {
                 {
-                  workInProgress2.type = Component = resolveForwardRefForHotReloading(Component);
+                  workInProgress2.type = Component2 = resolveForwardRefForHotReloading(Component2);
                 }
-                child = updateForwardRef(null, workInProgress2, Component, resolvedProps, renderLanes2);
+                child = updateForwardRef(null, workInProgress2, Component2, resolvedProps, renderLanes2);
                 return child;
               }
               case MemoComponent: {
                 {
                   if (workInProgress2.type !== workInProgress2.elementType) {
-                    var outerPropTypes = Component.propTypes;
+                    var outerPropTypes = Component2.propTypes;
                     if (outerPropTypes) {
                       checkPropTypes(
                         outerPropTypes,
                         resolvedProps,
                         // Resolved for outer only
                         "prop",
-                        getComponentNameFromType(Component)
+                        getComponentNameFromType(Component2)
                       );
                     }
                   }
@@ -16792,8 +16792,8 @@
                 child = updateMemoComponent(
                   null,
                   workInProgress2,
-                  Component,
-                  resolveDefaultProps(Component.type, resolvedProps),
+                  Component2,
+                  resolveDefaultProps(Component2.type, resolvedProps),
                   // The inner type can have defaults too
                   renderLanes2
                 );
@@ -16802,33 +16802,33 @@
             }
             var hint = "";
             {
-              if (Component !== null && typeof Component === "object" && Component.$$typeof === REACT_LAZY_TYPE2) {
+              if (Component2 !== null && typeof Component2 === "object" && Component2.$$typeof === REACT_LAZY_TYPE2) {
                 hint = " Did you wrap a component in React.lazy() more than once?";
               }
             }
-            throw new Error("Element type is invalid. Received a promise that resolves to: " + Component + ". " + ("Lazy element type must resolve to a class or function." + hint));
+            throw new Error("Element type is invalid. Received a promise that resolves to: " + Component2 + ". " + ("Lazy element type must resolve to a class or function." + hint));
           }
-          function mountIncompleteClassComponent(_current, workInProgress2, Component, nextProps, renderLanes2) {
+          function mountIncompleteClassComponent(_current, workInProgress2, Component2, nextProps, renderLanes2) {
             resetSuspendedCurrentOnMountInLegacyMode(_current, workInProgress2);
             workInProgress2.tag = ClassComponent;
             var hasContext;
-            if (isContextProvider(Component)) {
+            if (isContextProvider(Component2)) {
               hasContext = true;
               pushContextProvider(workInProgress2);
             } else {
               hasContext = false;
             }
             prepareToReadContext(workInProgress2, renderLanes2);
-            constructClassInstance(workInProgress2, Component, nextProps);
-            mountClassInstance(workInProgress2, Component, nextProps, renderLanes2);
-            return finishClassComponent(null, workInProgress2, Component, true, hasContext, renderLanes2);
+            constructClassInstance(workInProgress2, Component2, nextProps);
+            mountClassInstance(workInProgress2, Component2, nextProps, renderLanes2);
+            return finishClassComponent(null, workInProgress2, Component2, true, hasContext, renderLanes2);
           }
-          function mountIndeterminateComponent(_current, workInProgress2, Component, renderLanes2) {
+          function mountIndeterminateComponent(_current, workInProgress2, Component2, renderLanes2) {
             resetSuspendedCurrentOnMountInLegacyMode(_current, workInProgress2);
             var props = workInProgress2.pendingProps;
             var context;
             {
-              var unmaskedContext = getUnmaskedContext(workInProgress2, Component, false);
+              var unmaskedContext = getUnmaskedContext(workInProgress2, Component2, false);
               context = getMaskedContext(workInProgress2, unmaskedContext);
             }
             prepareToReadContext(workInProgress2, renderLanes2);
@@ -16838,8 +16838,8 @@
               markComponentRenderStarted(workInProgress2);
             }
             {
-              if (Component.prototype && typeof Component.prototype.render === "function") {
-                var componentName = getComponentNameFromType(Component) || "Unknown";
+              if (Component2.prototype && typeof Component2.prototype.render === "function") {
+                var componentName = getComponentNameFromType(Component2) || "Unknown";
                 if (!didWarnAboutBadClass[componentName]) {
                   error("The <%s /> component appears to have a render method, but doesn't extend React.Component. This is likely to cause errors. Change %s to extend React.Component instead.", componentName, componentName);
                   didWarnAboutBadClass[componentName] = true;
@@ -16850,7 +16850,7 @@
               }
               setIsRendering(true);
               ReactCurrentOwner$1.current = workInProgress2;
-              value = renderWithHooks(null, workInProgress2, Component, props, context, renderLanes2);
+              value = renderWithHooks(null, workInProgress2, Component2, props, context, renderLanes2);
               hasId = checkDidRenderIdHook();
               setIsRendering(false);
             }
@@ -16860,7 +16860,7 @@
             workInProgress2.flags |= PerformedWork;
             {
               if (typeof value === "object" && value !== null && typeof value.render === "function" && value.$$typeof === void 0) {
-                var _componentName = getComponentNameFromType(Component) || "Unknown";
+                var _componentName = getComponentNameFromType(Component2) || "Unknown";
                 if (!didWarnAboutModulePatternComponent[_componentName]) {
                   error("The <%s /> component appears to be a function component that returns a class instance. Change %s to a class that extends React.Component instead. If you can't use a class try assigning the prototype on the function as a workaround. `%s.prototype = React.Component.prototype`. Don't use an arrow function since it cannot be called with `new` by React.", _componentName, _componentName, _componentName);
                   didWarnAboutModulePatternComponent[_componentName] = true;
@@ -16873,7 +16873,7 @@
               typeof value === "object" && value !== null && typeof value.render === "function" && value.$$typeof === void 0
             ) {
               {
-                var _componentName2 = getComponentNameFromType(Component) || "Unknown";
+                var _componentName2 = getComponentNameFromType(Component2) || "Unknown";
                 if (!didWarnAboutModulePatternComponent[_componentName2]) {
                   error("The <%s /> component appears to be a function component that returns a class instance. Change %s to a class that extends React.Component instead. If you can't use a class try assigning the prototype on the function as a workaround. `%s.prototype = React.Component.prototype`. Don't use an arrow function since it cannot be called with `new` by React.", _componentName2, _componentName2, _componentName2);
                   didWarnAboutModulePatternComponent[_componentName2] = true;
@@ -16883,7 +16883,7 @@
               workInProgress2.memoizedState = null;
               workInProgress2.updateQueue = null;
               var hasContext = false;
-              if (isContextProvider(Component)) {
+              if (isContextProvider(Component2)) {
                 hasContext = true;
                 pushContextProvider(workInProgress2);
               } else {
@@ -16892,15 +16892,15 @@
               workInProgress2.memoizedState = value.state !== null && value.state !== void 0 ? value.state : null;
               initializeUpdateQueue(workInProgress2);
               adoptClassInstance(workInProgress2, value);
-              mountClassInstance(workInProgress2, Component, props, renderLanes2);
-              return finishClassComponent(null, workInProgress2, Component, true, hasContext, renderLanes2);
+              mountClassInstance(workInProgress2, Component2, props, renderLanes2);
+              return finishClassComponent(null, workInProgress2, Component2, true, hasContext, renderLanes2);
             } else {
               workInProgress2.tag = FunctionComponent;
               {
                 if (workInProgress2.mode & StrictLegacyMode) {
                   setIsStrictModeForDevtools(true);
                   try {
-                    value = renderWithHooks(null, workInProgress2, Component, props, context, renderLanes2);
+                    value = renderWithHooks(null, workInProgress2, Component2, props, context, renderLanes2);
                     hasId = checkDidRenderIdHook();
                   } finally {
                     setIsStrictModeForDevtools(false);
@@ -16912,16 +16912,16 @@
               }
               reconcileChildren(null, workInProgress2, value, renderLanes2);
               {
-                validateFunctionComponentInDev(workInProgress2, Component);
+                validateFunctionComponentInDev(workInProgress2, Component2);
               }
               return workInProgress2.child;
             }
           }
-          function validateFunctionComponentInDev(workInProgress2, Component) {
+          function validateFunctionComponentInDev(workInProgress2, Component2) {
             {
-              if (Component) {
-                if (Component.childContextTypes) {
-                  error("%s(...): childContextTypes cannot be defined on a function component.", Component.displayName || Component.name || "Component");
+              if (Component2) {
+                if (Component2.childContextTypes) {
+                  error("%s(...): childContextTypes cannot be defined on a function component.", Component2.displayName || Component2.name || "Component");
                 }
               }
               if (workInProgress2.ref !== null) {
@@ -16940,22 +16940,22 @@
                   error("Function components cannot be given refs. Attempts to access this ref will fail. Did you mean to use React.forwardRef()?%s", info);
                 }
               }
-              if (Component.defaultProps !== void 0) {
-                var componentName = getComponentNameFromType(Component) || "Unknown";
+              if (Component2.defaultProps !== void 0) {
+                var componentName = getComponentNameFromType(Component2) || "Unknown";
                 if (!didWarnAboutDefaultPropsOnFunctionComponent[componentName]) {
                   error("%s: Support for defaultProps will be removed from function components in a future major release. Use JavaScript default parameters instead.", componentName);
                   didWarnAboutDefaultPropsOnFunctionComponent[componentName] = true;
                 }
               }
-              if (typeof Component.getDerivedStateFromProps === "function") {
-                var _componentName3 = getComponentNameFromType(Component) || "Unknown";
+              if (typeof Component2.getDerivedStateFromProps === "function") {
+                var _componentName3 = getComponentNameFromType(Component2) || "Unknown";
                 if (!didWarnAboutGetDerivedStateOnFunctionComponent[_componentName3]) {
                   error("%s: Function components do not support getDerivedStateFromProps.", _componentName3);
                   didWarnAboutGetDerivedStateOnFunctionComponent[_componentName3] = true;
                 }
               }
-              if (typeof Component.contextType === "object" && Component.contextType !== null) {
-                var _componentName4 = getComponentNameFromType(Component) || "Unknown";
+              if (typeof Component2.contextType === "object" && Component2.contextType !== null) {
+                var _componentName4 = getComponentNameFromType(Component2) || "Unknown";
                 if (!didWarnAboutContextTypeOnFunctionComponent[_componentName4]) {
                   error("%s: Function components do not support contextType.", _componentName4);
                   didWarnAboutContextTypeOnFunctionComponent[_componentName4] = true;
@@ -17717,8 +17717,8 @@
                 pushHostContext(workInProgress2);
                 break;
               case ClassComponent: {
-                var Component = workInProgress2.type;
-                if (isContextProvider(Component)) {
+                var Component2 = workInProgress2.type;
+                if (isContextProvider(Component2)) {
                   pushContextProvider(workInProgress2);
                 }
                 break;
@@ -17845,10 +17845,10 @@
                 return mountLazyComponent(current2, workInProgress2, elementType, renderLanes2);
               }
               case FunctionComponent: {
-                var Component = workInProgress2.type;
+                var Component2 = workInProgress2.type;
                 var unresolvedProps = workInProgress2.pendingProps;
-                var resolvedProps = workInProgress2.elementType === Component ? unresolvedProps : resolveDefaultProps(Component, unresolvedProps);
-                return updateFunctionComponent(current2, workInProgress2, Component, resolvedProps, renderLanes2);
+                var resolvedProps = workInProgress2.elementType === Component2 ? unresolvedProps : resolveDefaultProps(Component2, unresolvedProps);
+                return updateFunctionComponent(current2, workInProgress2, Component2, resolvedProps, renderLanes2);
               }
               case ClassComponent: {
                 var _Component = workInProgress2.type;
@@ -17872,7 +17872,7 @@
                 var _resolvedProps2 = workInProgress2.elementType === type ? _unresolvedProps2 : resolveDefaultProps(type, _unresolvedProps2);
                 return updateForwardRef(current2, workInProgress2, type, _resolvedProps2, renderLanes2);
               }
-              case Fragment9:
+              case Fragment10:
                 return updateFragment(current2, workInProgress2, renderLanes2);
               case Mode:
                 return updateMode(current2, workInProgress2, renderLanes2);
@@ -18145,7 +18145,7 @@
               case SimpleMemoComponent:
               case FunctionComponent:
               case ForwardRef:
-              case Fragment9:
+              case Fragment10:
               case Mode:
               case Profiler:
               case ContextConsumer:
@@ -18153,8 +18153,8 @@
                 bubbleProperties(workInProgress2);
                 return null;
               case ClassComponent: {
-                var Component = workInProgress2.type;
-                if (isContextProvider(Component)) {
+                var Component2 = workInProgress2.type;
+                if (isContextProvider(Component2)) {
                   popContext(workInProgress2);
                 }
                 bubbleProperties(workInProgress2);
@@ -18472,8 +18472,8 @@
             popTreeContext(workInProgress2);
             switch (workInProgress2.tag) {
               case ClassComponent: {
-                var Component = workInProgress2.type;
-                if (isContextProvider(Component)) {
+                var Component2 = workInProgress2.type;
+                if (isContextProvider(Component2)) {
                   popContext(workInProgress2);
                 }
                 var flags = workInProgress2.flags;
@@ -22160,18 +22160,18 @@
           var createFiber = function(tag, pendingProps, key, mode) {
             return new FiberNode(tag, pendingProps, key, mode);
           };
-          function shouldConstruct$1(Component) {
-            var prototype = Component.prototype;
+          function shouldConstruct$1(Component2) {
+            var prototype = Component2.prototype;
             return !!(prototype && prototype.isReactComponent);
           }
           function isSimpleFunctionComponent(type) {
             return typeof type === "function" && !shouldConstruct$1(type) && type.defaultProps === void 0;
           }
-          function resolveLazyComponentTag(Component) {
-            if (typeof Component === "function") {
-              return shouldConstruct$1(Component) ? ClassComponent : FunctionComponent;
-            } else if (Component !== void 0 && Component !== null) {
-              var $$typeof = Component.$$typeof;
+          function resolveLazyComponentTag(Component2) {
+            if (typeof Component2 === "function") {
+              return shouldConstruct$1(Component2) ? ClassComponent : FunctionComponent;
+            } else if (Component2 !== void 0 && Component2 !== null) {
+              var $$typeof = Component2.$$typeof;
               if ($$typeof === REACT_FORWARD_REF_TYPE) {
                 return ForwardRef;
               }
@@ -22404,7 +22404,7 @@
             return fiber;
           }
           function createFiberFromFragment(elements, mode, lanes, key) {
-            var fiber = createFiber(Fragment9, elements, key, mode);
+            var fiber = createFiber(Fragment10, elements, key, mode);
             fiber.lanes = lanes;
             return fiber;
           }
@@ -22608,9 +22608,9 @@
             var fiber = get(parentComponent);
             var parentContext = findCurrentUnmaskedContext(fiber);
             if (fiber.tag === ClassComponent) {
-              var Component = fiber.type;
-              if (isContextProvider(Component)) {
-                return processChildContext(fiber, Component, parentContext);
+              var Component2 = fiber.type;
+              if (isContextProvider(Component2)) {
+                return processChildContext(fiber, Component2, parentContext);
               }
             }
             return parentContext;
@@ -23560,7 +23560,7 @@
       if (true) {
         (function() {
           "use strict";
-          var React48 = require_react();
+          var React49 = require_react();
           var REACT_ELEMENT_TYPE = Symbol.for("react.element");
           var REACT_PORTAL_TYPE = Symbol.for("react.portal");
           var REACT_FRAGMENT_TYPE = Symbol.for("react.fragment");
@@ -23586,7 +23586,7 @@
             }
             return null;
           }
-          var ReactSharedInternals = React48.__SECRET_INTERNALS_DO_NOT_USE_OR_YOU_WILL_BE_FIRED;
+          var ReactSharedInternals = React49.__SECRET_INTERNALS_DO_NOT_USE_OR_YOU_WILL_BE_FIRED;
           function error(format) {
             {
               {
@@ -23917,8 +23917,8 @@
               return describeNativeComponentFrame(fn, false);
             }
           }
-          function shouldConstruct(Component) {
-            var prototype = Component.prototype;
+          function shouldConstruct(Component2) {
+            var prototype = Component2.prototype;
             return !!(prototype && prototype.isReactComponent);
           }
           function describeUnknownElementTypeFrameInDEV(type, source, ownerFn) {
@@ -24436,11 +24436,11 @@
               return jsxWithValidation(type, props, key, false);
             }
           }
-          var jsx30 = jsxWithValidationDynamic;
-          var jsxs8 = jsxWithValidationStatic;
+          var jsx31 = jsxWithValidationDynamic;
+          var jsxs9 = jsxWithValidationStatic;
           exports.Fragment = REACT_FRAGMENT_TYPE;
-          exports.jsx = jsx30;
-          exports.jsxs = jsxs8;
+          exports.jsx = jsx31;
+          exports.jsxs = jsxs9;
         })();
       }
     }
@@ -24462,7 +24462,7 @@
   var import_client = __toESM(require_client());
 
   // src/renderer/App.tsx
-  var import_react8 = __toESM(require_react());
+  var import_react9 = __toESM(require_react());
 
   // src/renderer/components/widgets/CommandPalette.tsx
   var import_react4 = __toESM(require_react());
@@ -29753,7 +29753,7 @@ For more information, see https://radix-ui.com/primitives/docs/components/${titl
 
   // node_modules/lucide-react/dist/esm/createLucideIcon.js
   var createLucideIcon = (iconName, iconNode) => {
-    const Component = (0, import_react2.forwardRef)(
+    const Component2 = (0, import_react2.forwardRef)(
       ({
         color = "currentColor",
         size: size4 = 24,
@@ -29782,8 +29782,8 @@ For more information, see https://radix-ui.com/primitives/docs/components/${titl
         );
       }
     );
-    Component.displayName = `${iconName}`;
-    return Component;
+    Component2.displayName = `${iconName}`;
+    return Component2;
   };
 
   // node_modules/lucide-react/dist/esm/icons/arrow-right.js
@@ -32798,7 +32798,12 @@ For more information, see https://radix-ui.com/primitives/docs/components/${titl
         else
           window.electronAPI.getCapturedText().then(setCapturedText);
       };
-      window.electronAPI.onPaletteOpened?.(onShow);
+      const cleanup = window.electronAPI.onPaletteOpened?.(onShow);
+      return () => {
+        if (typeof cleanup === "function") {
+          cleanup();
+        }
+      };
     }, []);
     (0, import_react4.useEffect)(() => {
       let active = true;
@@ -32820,6 +32825,7 @@ For more information, see https://radix-ui.com/primitives/docs/components/${titl
         active = false;
         if (debounceTimerRef.current) {
           clearTimeout(debounceTimerRef.current);
+          debounceTimerRef.current = null;
         }
       };
     }, [query]);
@@ -33398,6 +33404,7 @@ For more information, see https://radix-ui.com/primitives/docs/components/${titl
     const [translated, setTranslated] = (0, import_react5.useState)("");
     const [loading, setLoading] = (0, import_react5.useState)(false);
     const containerRef = (0, import_react5.useRef)(null);
+    const pendingRequestsRef = (0, import_react5.useRef)(/* @__PURE__ */ new Map());
     (0, import_react5.useEffect)(() => {
       if (props?.selectedText) {
         setInput(props.selectedText);
@@ -33410,12 +33417,18 @@ For more information, see https://radix-ui.com/primitives/docs/components/${titl
           setTargetLang(LANGUAGE_NAMES[defaultTarget] || "english");
         }).catch((err) => console.error("Error getting preferences:", err));
       }
+      let cleanup;
       if (window.electronAPI?.onTranslatorInit) {
-        window.electronAPI.onTranslatorInit((_e2, data) => {
+        cleanup = window.electronAPI.onTranslatorInit((_e2, data) => {
           if (data?.selectedText)
             setInput(data.selectedText);
         });
       }
+      return () => {
+        if (typeof cleanup === "function") {
+          cleanup();
+        }
+      };
     }, []);
     (0, import_react5.useEffect)(() => {
       const id = setTimeout(() => {
@@ -33446,16 +33459,40 @@ For more information, see https://radix-ui.com/primitives/docs/components/${titl
         console.log("Translator: ResizeObserver triggered");
         resizeWindow();
       });
-      resizeObserver.observe(containerRef.current);
+      const element = containerRef.current;
+      if (element) {
+        resizeObserver.observe(element);
+      }
       return () => {
         clearTimeout(timeoutId);
+        if (element) {
+          resizeObserver.unobserve(element);
+        }
         resizeObserver.disconnect();
       };
     }, [input, translated, loading, sourceLang, targetLang]);
     async function translateText(text, tgt) {
+      const requestKey = `${text}:${tgt}`;
+      if (pendingRequestsRef.current.has(requestKey)) {
+        console.log("Translator: Reusing existing request for:", requestKey);
+        try {
+          const result = await pendingRequestsRef.current.get(requestKey);
+          if (result?.success) {
+            setTranslated(result.result.translatedText || "");
+            if (result.result.detectedSourceLanguage) {
+              setSourceLang(result.result.detectedSourceLanguage);
+            }
+          }
+          return;
+        } catch (error) {
+          console.error("Error in cached request:", error);
+        }
+      }
       setLoading(true);
       try {
-        const res = await window.electronAPI.executeAction(`translate-${tgt}`, text);
+        const requestPromise = window.electronAPI.executeAction(`translate-${tgt}`, text);
+        pendingRequestsRef.current.set(requestKey, requestPromise);
+        const res = await requestPromise;
         console.log("[TranslatorWidget] Translation response:", res);
         console.log("[TranslatorWidget] res.success:", res.success);
         console.log("[TranslatorWidget] res.result:", res.result);
@@ -33477,6 +33514,7 @@ For more information, see https://radix-ui.com/primitives/docs/components/${titl
         setTranslated(String(err));
       } finally {
         setLoading(false);
+        pendingRequestsRef.current.delete(requestKey);
       }
     }
     return /* @__PURE__ */ (0, import_jsx_runtime25.jsxs)(Card, { ref: containerRef, className: "w-full border border-ink-400 bg-ink-100 p-4 space-y-6 rounded-2xl", children: [
@@ -33600,6 +33638,7 @@ For more information, see https://radix-ui.com/primitives/docs/components/${titl
     const [loading, setLoading] = (0, import_react6.useState)(false);
     const [error, setError] = (0, import_react6.useState)("");
     const containerRef = (0, import_react6.useRef)(null);
+    const pendingRequestsRef = (0, import_react6.useRef)(/* @__PURE__ */ new Map());
     (0, import_react6.useEffect)(() => {
       console.log("CurrencyConverter: Initializing from props", {
         detectedAmount: props?.detectedAmount,
@@ -33686,21 +33725,47 @@ For more information, see https://radix-ui.com/primitives/docs/components/${titl
         console.log("CurrencyConverter: ResizeObserver triggered");
         resizeWindow();
       });
-      resizeObserver.observe(containerRef.current);
+      const element = containerRef.current;
+      if (element) {
+        resizeObserver.observe(element);
+      }
       return () => {
         clearTimeout(timeoutId);
+        if (element) {
+          resizeObserver.unobserve(element);
+        }
         resizeObserver.disconnect();
       };
     }, [amount, result, loading, error]);
     async function convertCurrency(from, to, amt) {
+      const requestKey = `${from}:${to}:${amt}`;
+      if (pendingRequestsRef.current.has(requestKey)) {
+        console.log("CurrencyConverter: Reusing existing request for:", requestKey);
+        try {
+          const result2 = await pendingRequestsRef.current.get(requestKey);
+          if (result2?.success) {
+            setResult(result2.result);
+            setRate(result2.rate);
+          } else {
+            setError(result2.error || "Conversion failed");
+            setResult(null);
+            setRate(null);
+          }
+          return;
+        } catch (error2) {
+          console.error("Error in cached request:", error2);
+        }
+      }
       setLoading(true);
       setError("");
       try {
-        const res = await window.electronAPI.convertCurrency({
+        const requestPromise = window.electronAPI.convertCurrency({
           from,
           to,
           amount: amt
         });
+        pendingRequestsRef.current.set(requestKey, requestPromise);
+        const res = await requestPromise;
         if (res.success) {
           setResult(res.result);
           setRate(res.rate);
@@ -33715,6 +33780,7 @@ For more information, see https://radix-ui.com/primitives/docs/components/${titl
         setRate(null);
       } finally {
         setLoading(false);
+        pendingRequestsRef.current.delete(requestKey);
       }
     }
     function swapCurrencies() {
@@ -33837,13 +33903,19 @@ For more information, see https://radix-ui.com/primitives/docs/components/${titl
   function ClipboardHistoryWidget({ items: initialItems }) {
     const [items, setItems] = (0, import_react7.useState)(initialItems || []);
     const commandRef = (0, import_react7.useRef)(null);
+    const isPastingRef = (0, import_react7.useRef)(false);
     (0, import_react7.useEffect)(() => {
       const onInit = (_event, data) => {
         if (data.type === "clipboard-history" && data.props?.items) {
           setItems(data.props.items);
         }
       };
-      window.electronAPI.onComponentInit?.(onInit);
+      const cleanup = window.electronAPI.onComponentInit?.(onInit);
+      return () => {
+        if (typeof cleanup === "function") {
+          cleanup();
+        }
+      };
     }, []);
     (0, import_react7.useEffect)(() => {
       const timer = setTimeout(() => {
@@ -33869,15 +33941,27 @@ For more information, see https://radix-ui.com/primitives/docs/components/${titl
       };
     }, [items]);
     const handleSelect = async (timestamp) => {
+      if (isPastingRef.current) {
+        console.log("Paste already in progress, ignoring duplicate request");
+        return;
+      }
+      isPastingRef.current = true;
       try {
         console.log("Pasting clipboard item:", timestamp);
         await window.electronAPI.pasteClipboardItem(timestamp.toString());
       } catch (error) {
         console.error("Error pasting clipboard item:", error);
+      } finally {
+        setTimeout(() => {
+          isPastingRef.current = false;
+        }, 500);
       }
     };
     (0, import_react7.useEffect)(() => {
       const handleKeyDown = (e) => {
+        if (isPastingRef.current) {
+          return;
+        }
         const num = parseInt(e.key, 10);
         if (num >= 1 && num <= 5 && items[num - 1]) {
           e.preventDefault();
@@ -33921,7 +34005,9 @@ For more information, see https://radix-ui.com/primitives/docs/components/${titl
         children: /* @__PURE__ */ (0, import_jsx_runtime27.jsx)(CommandList, { className: "overflow-visible", children: /* @__PURE__ */ (0, import_jsx_runtime27.jsx)(CommandGroup, { heading: "Recent Clipboard (1-5)", children: items.map((item, index2) => /* @__PURE__ */ (0, import_jsx_runtime27.jsxs)(
           CommandItem,
           {
-            onSelect: () => handleSelect(item.timestamp),
+            onSelect: () => {
+              handleSelect(item.timestamp);
+            },
             className: "cursor-pointer",
             "data-timestamp": item.timestamp,
             title: item.text || item.preview,
@@ -33937,22 +34023,130 @@ For more information, see https://radix-ui.com/primitives/docs/components/${titl
     );
   }
 
-  // src/renderer/App.tsx
+  // src/renderer/components/ErrorBoundary.tsx
+  var import_react8 = __toESM(require_react());
   var import_jsx_runtime28 = __toESM(require_jsx_runtime());
+  var ErrorBoundary = class extends import_react8.Component {
+    constructor(props) {
+      super(props);
+      this.handleReset = () => {
+        this.setState({
+          hasError: false,
+          error: null,
+          errorInfo: null
+        });
+      };
+      this.state = {
+        hasError: false,
+        error: null,
+        errorInfo: null
+      };
+    }
+    static getDerivedStateFromError(error) {
+      return {
+        hasError: true,
+        error,
+        errorInfo: null
+      };
+    }
+    componentDidCatch(error, errorInfo) {
+      console.error("ErrorBoundary caught an error:", error, errorInfo);
+      this.setState({
+        error,
+        errorInfo
+      });
+    }
+    render() {
+      if (this.state.hasError) {
+        if (this.props.fallback) {
+          return this.props.fallback;
+        }
+        return /* @__PURE__ */ (0, import_jsx_runtime28.jsxs)("div", { style: {
+          display: "flex",
+          flexDirection: "column",
+          alignItems: "center",
+          justifyContent: "center",
+          height: "100vh",
+          padding: "20px",
+          textAlign: "center",
+          fontFamily: "system-ui, -apple-system, sans-serif",
+          color: "#333"
+        }, children: [
+          /* @__PURE__ */ (0, import_jsx_runtime28.jsx)("h2", { style: { marginBottom: "16px", fontSize: "20px", fontWeight: "600" }, children: "Something went wrong" }),
+          /* @__PURE__ */ (0, import_jsx_runtime28.jsx)("p", { style: { marginBottom: "24px", color: "#666", maxWidth: "400px" }, children: "An unexpected error occurred. Please restart the app or try again." }),
+          this.state.error && /* @__PURE__ */ (0, import_jsx_runtime28.jsxs)("details", { style: {
+            marginBottom: "24px",
+            padding: "12px",
+            backgroundColor: "#f5f5f5",
+            borderRadius: "4px",
+            maxWidth: "600px",
+            textAlign: "left",
+            fontSize: "12px"
+          }, children: [
+            /* @__PURE__ */ (0, import_jsx_runtime28.jsx)("summary", { style: { cursor: "pointer", marginBottom: "8px", fontWeight: "600" }, children: "Error Details (Development Only)" }),
+            /* @__PURE__ */ (0, import_jsx_runtime28.jsxs)("pre", { style: {
+              whiteSpace: "pre-wrap",
+              wordBreak: "break-word",
+              margin: 0,
+              fontSize: "11px",
+              color: "#d32f2f"
+            }, children: [
+              this.state.error.toString(),
+              this.state.errorInfo?.componentStack && /* @__PURE__ */ (0, import_jsx_runtime28.jsxs)(import_jsx_runtime28.Fragment, { children: [
+                "\n\nComponent Stack:",
+                this.state.errorInfo.componentStack
+              ] })
+            ] })
+          ] }),
+          /* @__PURE__ */ (0, import_jsx_runtime28.jsx)(
+            "button",
+            {
+              onClick: this.handleReset,
+              style: {
+                padding: "8px 16px",
+                backgroundColor: "#007AFF",
+                color: "white",
+                border: "none",
+                borderRadius: "6px",
+                cursor: "pointer",
+                fontSize: "14px",
+                fontWeight: "500"
+              },
+              onMouseOver: (e) => {
+                e.currentTarget.style.backgroundColor = "#0051D5";
+              },
+              onMouseOut: (e) => {
+                e.currentTarget.style.backgroundColor = "#007AFF";
+              },
+              children: "Try Again"
+            }
+          )
+        ] });
+      }
+      return this.props.children;
+    }
+  };
+
+  // src/renderer/App.tsx
+  var import_jsx_runtime29 = __toESM(require_jsx_runtime());
   function App() {
-    const [componentType, setComponentType] = (0, import_react8.useState)("palette");
-    const [componentProps, setComponentProps] = (0, import_react8.useState)({});
-    (0, import_react8.useEffect)(() => {
+    const [componentType, setComponentType] = (0, import_react9.useState)("palette");
+    const [componentProps, setComponentProps] = (0, import_react9.useState)({});
+    (0, import_react9.useEffect)(() => {
+      const componentInitHandler = (_event, data) => {
+        console.log("App: component-init received", data);
+        const type = data.type;
+        if (type === "palette" || type === "translator" || type === "currency-converter" || type === "clipboard-history") {
+          setComponentType(type);
+          setComponentProps(data.props || {});
+        }
+      };
+      const cleanupFunctions = [];
       if (window.electronAPI?.onComponentInit) {
-        const handler = (_event, data) => {
-          console.log("App: component-init received", data);
-          const type = data.type;
-          if (type === "palette" || type === "translator" || type === "currency-converter" || type === "clipboard-history") {
-            setComponentType(type);
-            setComponentProps(data.props || {});
-          }
-        };
-        window.electronAPI.onComponentInit(handler);
+        const cleanup = window.electronAPI.onComponentInit(componentInitHandler);
+        if (typeof cleanup === "function") {
+          cleanupFunctions.push(cleanup);
+        }
       }
       const updateViewFromHash = () => {
         const hash = window.location.hash;
@@ -33970,50 +34164,63 @@ For more information, see https://radix-ui.com/primitives/docs/components/${titl
         updateViewFromHash();
       };
       window.addEventListener("hashchange", handleHashChange);
+      const paletteOpenedHandler = (_event, data) => {
+        console.log("App: palette-opened event received (legacy)");
+        setComponentType("palette");
+        if (data?.capturedText) {
+          setComponentProps({ capturedText: data.capturedText });
+        }
+      };
+      const translatorInitHandler = (_event, data) => {
+        console.log("App: translator-init event received (legacy)");
+        setComponentType("translator");
+        if (data?.selectedText) {
+          setComponentProps({ selectedText: data.selectedText });
+        }
+      };
+      const currencyConverterInitHandler = (_event, data) => {
+        console.log("App: currency-converter-init event received (legacy)");
+        setComponentType("currency-converter");
+        if (data?.conversionRate) {
+          setComponentProps({ conversionRate: data.conversionRate });
+        }
+      };
       if (window.electronAPI?.onPaletteOpened) {
-        window.electronAPI.onPaletteOpened((_event, data) => {
-          console.log("App: palette-opened event received (legacy)");
-          setComponentType("palette");
-          if (data?.capturedText) {
-            setComponentProps({ capturedText: data.capturedText });
-          }
-        });
+        const cleanup = window.electronAPI.onPaletteOpened(paletteOpenedHandler);
+        if (typeof cleanup === "function") {
+          cleanupFunctions.push(cleanup);
+        }
       }
       if (window.electronAPI?.onTranslatorInit) {
-        window.electronAPI.onTranslatorInit((_event, data) => {
-          console.log("App: translator-init event received (legacy)");
-          setComponentType("translator");
-          if (data?.selectedText) {
-            setComponentProps({ selectedText: data.selectedText });
-          }
-        });
+        const cleanup = window.electronAPI.onTranslatorInit(translatorInitHandler);
+        if (typeof cleanup === "function") {
+          cleanupFunctions.push(cleanup);
+        }
       }
       if (window.electronAPI?.onCurrencyConverterInit) {
-        window.electronAPI.onCurrencyConverterInit((_event, data) => {
-          console.log("App: currency-converter-init event received (legacy)");
-          setComponentType("currency-converter");
-          if (data?.conversionRate) {
-            setComponentProps({ conversionRate: data.conversionRate });
-          }
-        });
+        const cleanup = window.electronAPI.onCurrencyConverterInit(currencyConverterInitHandler);
+        if (typeof cleanup === "function") {
+          cleanupFunctions.push(cleanup);
+        }
       }
       return () => {
         clearTimeout(timeoutId);
         window.removeEventListener("hashchange", handleHashChange);
+        cleanupFunctions.forEach((cleanup) => cleanup());
       };
     }, []);
-    return /* @__PURE__ */ (0, import_jsx_runtime28.jsx)("div", { style: {
+    return /* @__PURE__ */ (0, import_jsx_runtime29.jsx)(ErrorBoundary, { children: /* @__PURE__ */ (0, import_jsx_runtime29.jsx)("div", { style: {
       width: "100vw",
       height: "100vh",
       background: "transparent",
       overflow: "hidden"
-    }, children: componentType === "translator" ? /* @__PURE__ */ (0, import_jsx_runtime28.jsx)(TranslatorWidget, { ...componentProps }) : componentType === "currency-converter" ? /* @__PURE__ */ (0, import_jsx_runtime28.jsx)(CurrencyConverterWidget, { ...componentProps }) : componentType === "clipboard-history" ? /* @__PURE__ */ (0, import_jsx_runtime28.jsx)(ClipboardHistoryWidget, { ...componentProps }) : /* @__PURE__ */ (0, import_jsx_runtime28.jsx)(CommandPalette, { ...componentProps }) });
+    }, children: componentType === "translator" ? /* @__PURE__ */ (0, import_jsx_runtime29.jsx)(ErrorBoundary, { children: /* @__PURE__ */ (0, import_jsx_runtime29.jsx)(TranslatorWidget, { ...componentProps }) }) : componentType === "currency-converter" ? /* @__PURE__ */ (0, import_jsx_runtime29.jsx)(ErrorBoundary, { children: /* @__PURE__ */ (0, import_jsx_runtime29.jsx)(CurrencyConverterWidget, { ...componentProps }) }) : componentType === "clipboard-history" ? /* @__PURE__ */ (0, import_jsx_runtime29.jsx)(ErrorBoundary, { children: /* @__PURE__ */ (0, import_jsx_runtime29.jsx)(ClipboardHistoryWidget, { ...componentProps }) }) : /* @__PURE__ */ (0, import_jsx_runtime29.jsx)(ErrorBoundary, { children: /* @__PURE__ */ (0, import_jsx_runtime29.jsx)(CommandPalette, { ...componentProps }) }) }) });
   }
 
   // src/renderer/index.tsx
-  var import_jsx_runtime29 = __toESM(require_jsx_runtime());
+  var import_jsx_runtime30 = __toESM(require_jsx_runtime());
   var root = (0, import_client.createRoot)(document.getElementById("root"));
-  root.render(/* @__PURE__ */ (0, import_jsx_runtime29.jsx)(App, {}));
+  root.render(/* @__PURE__ */ (0, import_jsx_runtime30.jsx)(App, {}));
 })();
 /*! Bundled license information:
 

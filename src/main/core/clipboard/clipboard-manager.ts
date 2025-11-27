@@ -37,13 +37,25 @@ export class ClipboardManager {
   private lastClipboardText: string = ''
   private lastClipboardImage: NativeImage | null = null
   private tray: Tray | null = null
+  private lastClipboardCheck = 0
+  private adaptiveInterval = 1000
+
+  // Memory-aware limits for clipboard history
+  private readonly MAX_HISTORY_MEMORY_MB = 50 // 50MB limit
+  private currentHistoryMemoryMB = 0
 
   // State flags for global shortcut handling
   private isProcessingShortcut = false
+  private isPasting = false // Guard to prevent concurrent paste operations
   private skipNextHistoryAdd = false
   private skipHistoryAddUntil: number = 0 // Timestamp-based skip to handle multiple watcher cycles
   private originalClipboardContent: { text?: string; image?: NativeImage; html?: string; rtf?: string } = {}
   private originalFocusedApp: string | null = null
+
+  // Cache for app names and AppleScript templates to reduce overhead
+  private appNameCache = new Map<string, { name: string; timestamp: number }>()
+  private readonly APP_NAME_CACHE_TTL = 5000 // 5 seconds
+  private scriptTemplateCache = new Map<string, string>()
 
   /**
    * Sanitize string for safe use in AppleScript
@@ -163,7 +175,7 @@ export class ClipboardManager {
   }
 
   /**
-   * Start monitoring clipboard changes
+   * Start monitoring clipboard changes with adaptive interval
    */
   private startClipboardWatcher(): void {
     if (this.clipboardWatcherInterval) {
@@ -171,8 +183,6 @@ export class ClipboardManager {
     }
 
     // Initialize with current clipboard state (only if not already set)
-    // This preserves the last known state when restarting after paste operations
-    // Check if both are empty, not just one, to properly initialize state
     const currentText = clipboard.readText()
     const currentImage = clipboard.readImage()
     if (!this.lastClipboardText && !this.lastClipboardImage) {
@@ -180,13 +190,30 @@ export class ClipboardManager {
       this.lastClipboardImage = currentImage.isEmpty() ? null : currentImage
     }
 
-    // Poll every 1000ms (optimized from 500ms for better CPU efficiency)
-    // Still responsive for clipboard monitoring while reducing system overhead by ~50%
-    this.clipboardWatcherInterval = setInterval(() => {
-      this.checkClipboardChanges()
-    }, 1000)
+    // OPTIMIZED: Adaptive interval - increases when idle, resets when active
+    const checkWithAdaptiveInterval = () => {
+      const now = Date.now()
+      const timeSinceLastCheck = now - this.lastClipboardCheck
 
-    logger.info('Clipboard watcher started (1000ms interval)')
+      // Increase interval if no changes detected recently (reduce CPU when idle)
+      if (timeSinceLastCheck > 5000 && this.adaptiveInterval < 3000) {
+        this.adaptiveInterval = Math.min(Math.floor(this.adaptiveInterval * 1.5), 3000)
+      } else if (timeSinceLastCheck < 2000) {
+        // Reset to fast interval if recent activity
+        this.adaptiveInterval = 1000
+      }
+
+      this.checkClipboardChanges()
+      this.lastClipboardCheck = now
+
+      // Schedule next check with adaptive interval
+      this.clipboardWatcherInterval = setTimeout(checkWithAdaptiveInterval, this.adaptiveInterval)
+    }
+
+    this.lastClipboardCheck = Date.now()
+    checkWithAdaptiveInterval()
+
+    logger.info(`Clipboard watcher started (adaptive interval: ${this.adaptiveInterval}ms)`)
   }
 
   /**
@@ -194,10 +221,34 @@ export class ClipboardManager {
    */
   private stopClipboardWatcher(): void {
     if (this.clipboardWatcherInterval) {
-      clearInterval(this.clipboardWatcherInterval)
+      // Handle both setInterval and setTimeout (for adaptive interval)
+      if (typeof this.clipboardWatcherInterval === 'number') {
+        clearTimeout(this.clipboardWatcherInterval)
+      } else {
+        clearInterval(this.clipboardWatcherInterval)
+      }
       this.clipboardWatcherInterval = null
+      this.adaptiveInterval = 1000 // Reset to default
       logger.info('Clipboard watcher stopped')
     }
+  }
+
+  /**
+   * Compare images efficiently by size first, then data URL only if needed
+   */
+  private imagesMatch(img1: NativeImage | null, img2: NativeImage | null): boolean {
+    if (!img1 || !img2) return img1 === img2
+    if (img1.isEmpty() || img2.isEmpty()) return img1.isEmpty() === img2.isEmpty()
+
+    // Fast comparison: check size first (avoids expensive toDataURL() if sizes differ)
+    const size1 = img1.getSize()
+    const size2 = img2.getSize()
+    if (size1.width !== size2.width || size1.height !== size2.height) {
+      return false
+    }
+
+    // Only do expensive comparison if sizes match
+    return img1.toDataURL() === img2.toDataURL()
   }
 
   /**
@@ -215,17 +266,21 @@ export class ClipboardManager {
       return
     }
 
+    // OPTIMIZED: Read text first (most common case, fastest check)
     const currentText = clipboard.readText()
-    const currentImage = clipboard.readImage()
-    const hasImage = currentImage && !currentImage.isEmpty()
 
     // Check if text changed (text takes priority over image)
     if (currentText && currentText !== this.lastClipboardText) {
       this.lastClipboardText = currentText
+
+      // Only read image if text changed (optimization: avoid unnecessary read)
+      const currentImage = clipboard.readImage()
+      const hasImage = currentImage && !currentImage.isEmpty()
       this.lastClipboardImage = hasImage ? currentImage : null
 
-      const html = clipboard.readHTML()
-      const rtf = clipboard.readRTF()
+      // Only read HTML/RTF if text suggests rich content (optimization)
+      const html = currentText.includes('<') ? clipboard.readHTML() : undefined
+      const rtf = html ? clipboard.readRTF() : undefined
 
       this.addToHistory({
         text: currentText,
@@ -239,76 +294,126 @@ export class ClipboardManager {
     }
 
     // Check if image changed (only when no text or text hasn't changed)
-    if (hasImage) {
-      const imageDataUrl = currentImage.toDataURL()
-      const lastImageDataUrl = this.lastClipboardImage?.toDataURL()
+    if (!currentText) {
+      const currentImage = clipboard.readImage()
+      const hasImage = currentImage && !currentImage.isEmpty()
 
-      if (imageDataUrl !== lastImageDataUrl) {
-        this.lastClipboardImage = currentImage
-        this.lastClipboardText = currentText || ''
+      if (hasImage) {
+        // OPTIMIZED: Use efficient image comparison instead of expensive toDataURL() on every check
+        if (!this.imagesMatch(currentImage, this.lastClipboardImage)) {
+          this.lastClipboardImage = currentImage
+          this.lastClipboardText = ''
 
-        this.addToHistory({
-          image: currentImage,
-          text: currentText || undefined,
-          timestamp: Date.now(),
-          preview: this.generatePreview(currentText || null, currentImage)
-        })
+          this.addToHistory({
+            image: currentImage,
+            text: undefined,
+            timestamp: Date.now(),
+            preview: this.generatePreview(null, currentImage)
+          })
+        }
+      } else if (this.lastClipboardText || this.lastClipboardImage) {
+        // Clipboard was cleared - update state but don't add empty item to history
+        this.lastClipboardText = ''
+        this.lastClipboardImage = null
       }
-    } else if (!currentText && this.lastClipboardText) {
-      // Clipboard was cleared - update state but don't add empty item to history
-      this.lastClipboardText = ''
-      this.lastClipboardImage = null
     }
   }
 
   /**
-   * Add item to clipboard history with deduplication
+   * Add item to clipboard history with optimized deduplication
    */
   private addToHistory(item: ClipboardItem): void {
-    // Deduplicate: don't add if identical to recent items (check last 3 to avoid rapid duplicates)
-    const recentItems = this.clipboardHistory.slice(-3)
-    for (const recentItem of recentItems) {
-      // Compare text items
-      if (item.text && recentItem.text && item.text === recentItem.text) {
-        // Also check if images match (if both have images)
-        if (item.image && recentItem.image) {
-          const currentDataUrl = item.image.toDataURL()
-          const recentDataUrl = recentItem.image.toDataURL()
-          if (currentDataUrl === recentDataUrl) {
+    // OPTIMIZED: Fast text deduplication first (avoids expensive image comparison)
+    if (item.text) {
+      // Fast text-only comparison for recent items
+      const recentTextItems = this.clipboardHistory
+        .slice(-3)
+        .filter(i => i.text)
+        .map(i => i.text!)
+
+      if (recentTextItems.includes(item.text)) {
+        // Text matches - only compare images if both items have images
+        const recentItem = this.clipboardHistory
+          .slice(-3)
+          .find(i => i.text === item.text)
+
+        if (recentItem) {
+          // Use efficient image comparison (checks size first, then data URL only if needed)
+          if (this.imagesMatch(item.image || null, recentItem.image || null)) {
             logger.debug('Skipping duplicate item (text and image match)')
             return
           }
-        } else if (!item.image && !recentItem.image) {
-          // Both are text-only and match
+        } else {
+          // Text-only match, no images to compare
           logger.debug('Skipping duplicate text item')
           return
         }
       }
+    } else if (item.image) {
+      // Image-only item - use efficient comparison
+      const recentImageItems = this.clipboardHistory
+        .slice(-3)
+        .filter(i => !i.text && i.image)
 
-      // Compare image items (when no text)
-      if (!item.text && !recentItem.text && item.image && recentItem.image) {
-        const currentDataUrl = item.image.toDataURL()
-        const recentDataUrl = recentItem.image.toDataURL()
-        if (currentDataUrl === recentDataUrl) {
+      for (const recentItem of recentImageItems) {
+        if (this.imagesMatch(item.image || null, recentItem.image || null)) {
           logger.debug('Skipping duplicate image item')
           return
         }
       }
     }
 
+    // Calculate memory usage for this item
+    const itemMemory = this.estimateItemMemoryMB(item)
+
+    // Remove old items if memory limit would be exceeded
+    while (this.currentHistoryMemoryMB + itemMemory > this.MAX_HISTORY_MEMORY_MB && this.clipboardHistory.length > 0) {
+      const removed = this.clipboardHistory.shift()
+      if (removed) {
+        const removedMemory = this.estimateItemMemoryMB(removed)
+        this.currentHistoryMemoryMB -= removedMemory
+        logger.debug(`Removed oldest item due to memory limit: ${removed.preview} (freed ${removedMemory.toFixed(2)}MB)`)
+      }
+    }
+
     // Add to history
     this.clipboardHistory.push(item)
-    logger.debug(`Added to clipboard history: ${item.preview}`)
+    this.currentHistoryMemoryMB += itemMemory
+    logger.debug(`Added to clipboard history: ${item.preview} (${itemMemory.toFixed(2)}MB, total: ${this.currentHistoryMemoryMB.toFixed(2)}MB)`)
 
-    // Enforce max items limit
+    // Also enforce max items limit (secondary constraint)
     const maxItems = settingsManager.get('clipboardMaxItems') ?? 100
     if (this.clipboardHistory.length > maxItems) {
       const removed = this.clipboardHistory.shift()
-      logger.debug(`Removed oldest item (max ${maxItems}): ${removed?.preview}`)
+      if (removed) {
+        const removedMemory = this.estimateItemMemoryMB(removed)
+        this.currentHistoryMemoryMB -= removedMemory
+        logger.debug(`Removed oldest item (max ${maxItems}): ${removed.preview} (freed ${removedMemory.toFixed(2)}MB)`)
+      }
     }
 
     // Update tray menu
     this.updateTrayMenu()
+  }
+
+  /**
+   * Estimate memory usage of a clipboard item in MB
+   */
+  private estimateItemMemoryMB(item: ClipboardItem): number {
+    let size = 0
+    if (item.text) {
+      // UTF-16 encoding, ~2 bytes per character
+      size += (item.text.length * 2) / 1024 / 1024
+    }
+    if (item.image && !item.image.isEmpty()) {
+      const { width, height } = item.image.getSize()
+      // RGBA format, 4 bytes per pixel
+      size += (width * height * 4) / 1024 / 1024
+    }
+    // HTML and RTF are typically small, estimate 1KB each
+    if (item.html) size += 0.001
+    if (item.rtf) size += 0.001
+    return size
   }
 
   /**
@@ -346,6 +451,7 @@ export class ClipboardManager {
    */
   clearHistory(): void {
     this.clipboardHistory = []
+    this.currentHistoryMemoryMB = 0
     logger.info('Clipboard history cleared')
     this.updateTrayMenu()
 
@@ -390,109 +496,92 @@ export class ClipboardManager {
 
   /**
    * Paste clipboard item to focused app (auto-paste workflow)
+   * NOTE: Window closing is now handled by the IPC handler BEFORE this method is called
    */
   async pasteItem(id: string): Promise<void> {
+    // Prevent concurrent paste operations
+    if (this.isPasting) {
+      logger.warn(`Paste already in progress, ignoring duplicate request for item: ${id}`)
+      return
+    }
+
     const item = this.getItemById(id)
     if (!item) {
       logger.warn(`Clipboard item not found: ${id}`)
       return
     }
 
-    // Temporarily stop clipboard watcher to prevent interference during paste
-    const wasWatching = this.clipboardWatcherInterval !== null
-    if (wasWatching) {
-      this.stopClipboardWatcher()
-      logger.debug('Stopped clipboard watcher for paste operation')
-    }
+    this.isPasting = true
 
-    // Prevent this item from being re-added to history for the next 3 seconds
-    // This covers multiple clipboard watcher cycles (watcher runs every 1000ms)
-    // Set this BEFORE writing to clipboard to prevent race conditions
-    this.skipNextHistoryAdd = true
-    this.skipHistoryAddUntil = Date.now() + 3000
-
-    // Update last known clipboard state BEFORE writing to prevent watcher from detecting this change
-    // This prevents the clipboard watcher from adding the pasted item back to history
-    const pastedText = item.text || ''
-    const pastedImage = item.image || null
-    this.lastClipboardText = pastedText
-    this.lastClipboardImage = pastedImage
-
-    // Write to system clipboard - ONLY plain text to remove all formatting
-    // This ensures pasted text has no formatting from the original source
-    clipboard.clear()
-
-    if (item.image) {
-      // For images, write the image
-      clipboard.writeImage(item.image)
-      logger.debug('Wrote clipboard item: image')
-    } else if (item.text) {
-      // For text, write ONLY plain text (no HTML/RTF) to strip all formatting
-      clipboard.writeText(item.text)
-      logger.debug('Wrote clipboard item: plain text only (formatting removed)')
-    }
-
-    // Small delay to ensure clipboard is written
-    await new Promise(resolve => setTimeout(resolve, 50))
-
-    // Close the clipboard history window first
     try {
-      const { BrowserWindow } = await import('electron')
-      const allWindows = BrowserWindow.getAllWindows()
-      let closedWindow = false
-      for (const win of allWindows) {
-        if (!win.isDestroyed()) {
-          const title = win.getTitle()
-          // Close clipboard-history window - be more specific to avoid closing wrong windows
-          // Check for exact match or clipboard-history in title
-          if (title && (title.toLowerCase().includes('clipboard-history') ||
-            title.toLowerCase() === 'clipboard history')) {
-            win.close()
-            closedWindow = true
-            logger.info('Closed clipboard history window')
-            break // Only close one window
-          }
-        }
+      // Temporarily stop clipboard watcher to prevent interference during paste
+      const wasWatching = this.clipboardWatcherInterval !== null
+      if (wasWatching) {
+        this.stopClipboardWatcher()
+        logger.debug('Stopped clipboard watcher for paste operation')
       }
-      // Wait for window to fully close and focus to restore
-      // Increased delay for web apps like Gmail which need more time to restore focus
-      if (closedWindow) {
-        await new Promise(resolve => setTimeout(resolve, 600))
-      } else {
-        // Still wait a bit even if no window was found, to ensure focus is ready
-        await new Promise(resolve => setTimeout(resolve, 300))
+
+      // Prevent this item from being re-added to history for the next 3 seconds
+      // This covers multiple clipboard watcher cycles (watcher runs every 1000ms)
+      // Set this BEFORE writing to clipboard to prevent race conditions
+      this.skipNextHistoryAdd = true
+      this.skipHistoryAddUntil = Date.now() + 3000
+
+      // Update last known clipboard state BEFORE writing to prevent watcher from detecting this change
+      // This prevents the clipboard watcher from adding the pasted item back to history
+      const pastedText = item.text || ''
+      const pastedImage = item.image || null
+      this.lastClipboardText = pastedText
+      this.lastClipboardImage = pastedImage
+
+      // Write to system clipboard - ONLY plain text to remove all formatting
+      // This ensures pasted text has no formatting from the original source
+      clipboard.clear()
+
+      if (item.image) {
+        // For images, write the image
+        clipboard.writeImage(item.image)
+        logger.debug('Wrote clipboard item: image')
+      } else if (item.text) {
+        // For text, write ONLY plain text (no HTML/RTF) to strip all formatting
+        clipboard.writeText(item.text)
+        logger.debug('Wrote clipboard item: plain text only (formatting removed)')
       }
-    } catch (error) {
-      logger.warn('Failed to close clipboard window', error)
-      // Still wait a bit for focus to restore
-      await new Promise(resolve => setTimeout(resolve, 200))
-    }
 
-    // Re-capture focused app AFTER closing window to ensure we have the correct app
-    // This ensures we paste to the original app, not the clipboard window
-    const focusedApp = await this.captureFocusedApp()
-    const targetApp = focusedApp || this.originalFocusedApp
+      // Small delay to ensure clipboard is written
+      await new Promise(resolve => setTimeout(resolve, 50))
 
-    if (!targetApp) {
-      logger.warn('No target app available for paste - clipboard content is set but paste may fail')
-      // Still continue - user can paste manually if needed
-    }
+      // Re-capture focused app to ensure we have the correct app
+      // (window should already be closed by IPC handler, so this should get the original app)
+      const focusedApp = await this.captureFocusedApp()
+      const targetApp = focusedApp || this.originalFocusedApp
 
-    // Simulate Cmd+V via AppleScript with focus restoration
-    if (process.platform === 'darwin') {
-      try {
-        let script: string
+      if (!targetApp) {
+        logger.warn('No target app available for paste - clipboard content is set but paste may fail')
+        // Still continue - user can paste manually if needed
+      }
 
-        logger.info(`Preparing to paste. targetApp: ${targetApp || 'null'}, item: ${item.preview.substring(0, 30)}`)
+      // Simulate Cmd+V via AppleScript with focus restoration
+      if (process.platform === 'darwin') {
+        try {
+          let script: string
 
-        if (targetApp) {
-          // We have a target app - activate it then paste
-          // Sanitize app name to prevent AppleScript injection
-          const safeAppName = this.sanitizeAppleScriptString(targetApp)
-          // Improved focus handling for web apps like Gmail
-          // Gmail's subject/to fields need more time to be ready after app activation
-          // We activate, wait for app to be frontmost, then add extra delay for field focus
-          script = `tell application "${safeAppName}" to activate
+          logger.info(`Preparing to paste. targetApp: ${targetApp || 'null'}, item: ${item.preview.substring(0, 30)}`)
+
+          // Use cached script template if available
+          const scriptKey = targetApp ? `paste-with-app:${targetApp}` : 'paste-no-app'
+          let cachedScript = this.scriptTemplateCache.get(scriptKey)
+
+          if (!cachedScript) {
+            // Build script template
+            if (targetApp) {
+              // We have a target app - activate it then paste
+              // Sanitize app name to prevent AppleScript injection
+              const safeAppName = this.sanitizeAppleScriptString(targetApp)
+              // Improved focus handling for web apps like Gmail
+              // Gmail's subject/to fields need more time to be ready after app activation
+              // We activate, wait for app to be frontmost, then add extra delay for field focus
+              cachedScript = `tell application "${safeAppName}" to activate
 delay 0.5
 tell application "System Events"
   -- Wait for the app to be frontmost (with timeout to prevent infinite loop)
@@ -507,69 +596,79 @@ tell application "System Events"
   -- Send paste command
   keystroke "v" using command down
 end tell`
-        } else {
-          // No target app - just send keystroke to frontmost app
-          // Increased delay to ensure field is ready (especially for web app fields)
-          script = `delay 0.6
+            } else {
+              // No target app - just send keystroke to frontmost app
+              // Increased delay to ensure field is ready (especially for web app fields)
+              cachedScript = `delay 0.6
 tell application "System Events"
   keystroke "v" using command down
 end tell`
-        }
-
-        // Write script to temp file to avoid quote escaping issues
-        const tempPath = join(app.getPath('temp'), `paste-${Date.now()}.scpt`)
-        writeFileSync(tempPath, script, 'utf8')
-
-        try {
-          await execAsync(`osascript "${tempPath}"`)
-          logger.info(`Auto-pasted to ${targetApp || 'frontmost app'}: ${item.preview}`)
-        } finally {
-          // Clean up temp file
-          try {
-            unlinkSync(tempPath)
-          } catch (e) {
-            // Ignore cleanup errors
+            }
+            // Cache the template
+            this.scriptTemplateCache.set(scriptKey, cachedScript)
           }
+
+          script = cachedScript
+
+          // Write script to temp file to avoid quote escaping issues
+          const tempPath = join(app.getPath('temp'), `paste-${Date.now()}.scpt`)
+          writeFileSync(tempPath, script, 'utf8')
+
+          try {
+            await execAsync(`osascript "${tempPath}"`)
+            logger.info(`Auto-pasted to ${targetApp || 'frontmost app'}: ${item.preview}`)
+          } finally {
+            // Clean up temp file
+            try {
+              unlinkSync(tempPath)
+            } catch (e) {
+              // Ignore cleanup errors
+            }
+          }
+        } catch (error) {
+          logger.error('Failed to auto-paste', error)
+          // Don't throw - clipboard is already set, user can paste manually
         }
-      } catch (error) {
-        logger.error('Failed to auto-paste', error)
-        // Don't throw - clipboard is already set, user can paste manually
       }
-    }
 
-    // Restart clipboard watcher after paste operation completes
-    // Wait a bit longer to ensure any clipboard changes from the paste are ignored
-    await new Promise(resolve => setTimeout(resolve, 500))
+      // Restart clipboard watcher after paste operation completes
+      // Wait a bit longer to ensure any clipboard changes from the paste are ignored
+      await new Promise(resolve => setTimeout(resolve, 500))
 
-    // Only restart watcher if it was running before AND clipboard monitoring is enabled
-    if (wasWatching) {
-      const isActive = settingsManager.get('clipboardActive') ?? true
-      if (isActive) {
-        // Restart watcher but preserve the last known state we set
-        // This prevents the watcher from detecting the pasted item as a new change
-        this.clipboardWatcherInterval = setInterval(() => {
-          this.checkClipboardChanges()
-        }, 1000)
-        logger.debug('Restarted clipboard watcher after paste operation')
-      } else {
-        logger.debug('Clipboard monitoring is disabled, not restarting watcher')
+      // Only restart watcher if it was running before AND clipboard monitoring is enabled
+      if (wasWatching) {
+        const isActive = settingsManager.get('clipboardActive') ?? true
+        if (isActive) {
+          // Restart watcher with adaptive interval (preserve state to prevent detecting pasted item)
+          this.startClipboardWatcher()
+          logger.debug('Restarted clipboard watcher after paste operation')
+        } else {
+          logger.debug('Clipboard monitoring is disabled, not restarting watcher')
+        }
       }
-    }
 
-    // Keep skip window active for a bit longer to catch any delayed clipboard changes
-    // This ensures that even if the watcher detects a change, it won't add it to history
-    this.skipHistoryAddUntil = Date.now() + 2000
+      // Keep skip window active for a bit longer to catch any delayed clipboard changes
+      // This ensures that even if the watcher detects a change, it won't add it to history
+      this.skipHistoryAddUntil = Date.now() + 2000
+    } finally {
+      // Always reset paste flag, even if an error occurred
+      this.isPasting = false
+    }
   }
 
-
-
-
   /**
-   * Capture the focused application name using AppleScript
+   * Capture the focused application name using AppleScript (with caching)
    */
   private async captureFocusedApp(): Promise<string | null> {
     if (process.platform !== 'darwin') {
       return null
+    }
+
+    // Check cache first
+    const cached = this.appNameCache.get('current')
+    if (cached && Date.now() - cached.timestamp < this.APP_NAME_CACHE_TTL) {
+      logger.debug(`Using cached app name: ${cached.name}`)
+      return cached.name
     }
 
     try {
@@ -580,6 +679,10 @@ end tell`
 
       const { stdout } = await execAsync(`osascript -e '${script.replace(/'/g, "'\\''")}'`)
       const appName = stdout.trim()
+
+      // Cache the result
+      this.appNameCache.set('current', { name: appName, timestamp: Date.now() })
+
       logger.info(`Captured focused app: ${appName}`)
       return appName
     } catch (error) {

@@ -174,6 +174,10 @@ async function createMainWindow() {
   setupPaletteBlurHandler(mainWindow)
 
   mainWindow.on('closed', () => {
+    // Clean up all listeners to prevent memory leaks
+    if (mainWindow && !mainWindow.isDestroyed()) {
+      mainWindow.removeAllListeners()
+    }
     mainWindow = null
   })
 
@@ -229,15 +233,18 @@ async function createTranslatorWindow(selectedText: string) {
     const [afterSetX, afterSetY] = translatorWindow.getPosition()
     logger.info(`[DEBUG TRANSLATOR] Window position AFTER setPosition: (${afterSetX}, ${afterSetY})`)
 
-      // CRITICAL: Force visibleOnAllWorkspaces MULTIPLE times to ensure macOS respects it
-      // macOS sometimes ignores the first call, so we call it multiple times with delays
-      ; (translatorWindow as any).setVisibleOnAllWorkspaces(true)
-    logger.info('[DEBUG TRANSLATOR] First call: Set visibleOnAllWorkspaces to true')
-    await new Promise(resolve => setTimeout(resolve, 20))
-
-      ; (translatorWindow as any).setVisibleOnAllWorkspaces(true)
-    logger.info('[DEBUG TRANSLATOR] Second call: Set visibleOnAllWorkspaces to true')
-    await new Promise(resolve => setTimeout(resolve, 20))
+    // CRITICAL: Set visibleOnAllWorkspaces once with options (more reliable than multiple calls)
+    // Use single call with options instead of multiple calls with delays
+    try {
+      ;(translatorWindow as any).setVisibleOnAllWorkspaces(true, { visibleOnFullScreen: true })
+      logger.info('[DEBUG TRANSLATOR] Set visibleOnAllWorkspaces with fullScreen option')
+    } catch (e) {
+      // Fallback without options
+      ;(translatorWindow as any).setVisibleOnAllWorkspaces(true)
+      logger.info('[DEBUG TRANSLATOR] Set visibleOnAllWorkspaces (fallback)')
+    }
+    // Single delay for macOS to process (reduced from 2x 20ms = 40ms to 30ms)
+    await new Promise(resolve => setTimeout(resolve, 30))
 
     // Also ensure alwaysOnTop is set with 'pop-up-menu' level (CRITICAL for space switching fix)
     translatorWindow.setAlwaysOnTop(true, 'pop-up-menu', 1)
@@ -254,7 +261,8 @@ async function createTranslatorWindow(selectedText: string) {
     if (process.platform === 'darwin') {
       app.hide()
       logger.info('[DEBUG TRANSLATOR] Hid app before showing window')
-      await new Promise(resolve => setTimeout(resolve, 20))
+      // Reduced delay - app.hide() is synchronous
+      await new Promise(resolve => setTimeout(resolve, 10))
     }
 
     // CRITICAL: Use native macOS APIs to ensure window stays on current space
@@ -282,45 +290,28 @@ async function createTranslatorWindow(selectedText: string) {
     // 2. Ensure visibleOnAllWorkspaces is set BEFORE showing
     // 3. Use showInactive() to prevent app activation
     
-    // CRITICAL: Set visibleOnAllWorkspaces BEFORE any display checks/moves
-    // This must be done first to ensure macOS knows the window should be on all spaces
-    ;(translatorWindow as any).setVisibleOnAllWorkspaces(true)
-    await new Promise(resolve => setTimeout(resolve, 10))
+    // CRITICAL: Batch window operations to reduce delays
+    // Set visibleOnAllWorkspaces and position together, then verify once
+    try {
+      ;(translatorWindow as any).setVisibleOnAllWorkspaces(true, { visibleOnFullScreen: true })
+    } catch (e) {
+      ;(translatorWindow as any).setVisibleOnAllWorkspaces(true)
+    }
     
-    // CRITICAL: Ensure window is on the correct display BEFORE showing
-    // macOS may have "remembered" the window's original display, so we need to force it
-    // First, verify which display the current position is on
+    // Set position and verify display in one pass
+    translatorWindow.setPosition(displayX, displayY, false)
     const [currentPosX, currentPosY] = translatorWindow.getPosition()
     const currentDisplay = screen.getDisplayNearestPoint({ x: currentPosX, y: currentPosY })
     
-    // If the window is on a different display than expected, move it first
+    // Only correct if on wrong display (reduced from multiple verification loops)
     if (currentDisplay.id !== display.id) {
-      logger.warn(`[DEBUG TRANSLATOR] Window is on display ${currentDisplay.id}, but should be on ${display.id}. Moving to correct display...`)
-      // Move window to the correct display by setting position relative to that display
+      logger.warn(`[DEBUG TRANSLATOR] Window on wrong display ${currentDisplay.id}, correcting to ${display.id}`)
       translatorWindow.setPosition(displayX, displayY, false)
-      await new Promise(resolve => setTimeout(resolve, 50)) // Give macOS time to process the move
-      
-      // Verify it moved
-      const [afterMoveX, afterMoveY] = translatorWindow.getPosition()
-      const afterMoveDisplay = screen.getDisplayNearestPoint({ x: afterMoveX, y: afterMoveY })
-      if (afterMoveDisplay.id !== display.id) {
-        logger.warn(`[DEBUG TRANSLATOR] Window still on wrong display after move. Forcing position again...`)
-        // Force position multiple times
-        for (let i = 0; i < 3; i++) {
-          translatorWindow.setPosition(displayX, displayY, false)
-          await new Promise(resolve => setTimeout(resolve, 30))
-        }
-      }
-    } else {
-      // Window is on correct display, just ensure position is correct
-      translatorWindow.setPosition(displayX, displayY, false)
-      logger.info(`[DEBUG TRANSLATOR] Window already on correct display, set position: (${displayX}, ${displayY})`)
+      // Single delay for display correction (reduced from 50ms + 3x 30ms = 140ms to 40ms)
+      await new Promise(resolve => setTimeout(resolve, 40))
     }
     
-    // CRITICAL: Set position one more time right before showing to ensure it sticks
-    translatorWindow.setPosition(displayX, displayY, false)
-    await new Promise(resolve => setTimeout(resolve, 10))
-    logger.info(`[DEBUG TRANSLATOR] Final position set BEFORE show: (${displayX}, ${displayY})`)
+    logger.info(`[DEBUG TRANSLATOR] Position set: (${displayX}, ${displayY})`)
     
     // CRITICAL: Show window with position already set (matching Command Palette behavior)
     logger.info('[DEBUG TRANSLATOR] About to show window (inactive)')
@@ -341,33 +332,24 @@ async function createTranslatorWindow(selectedText: string) {
     logger.info(`[DEBUG TRANSLATOR] Window position AFTER show: (${afterShowX}, ${afterShowY}), visible=${translatorWindow.isVisible()}`)
     logger.info(`[DEBUG TRANSLATOR] Expected position: (${displayX}, ${displayY}), Actual position: (${afterShowX}, ${afterShowY})`)
 
-    // Check if position changed (indicates space switch)
-    if (Math.abs(afterShowY - displayY) > 10) {
-      logger.warn(`[DEBUG TRANSLATOR] WARNING: Position changed significantly! This may indicate space switching. Expected Y: ${displayY}, Actual Y: ${afterShowY}, Delta: ${afterShowY - displayY}`)
-      
-      // If position changed, try to correct it by repositioning multiple times
-      logger.info('[DEBUG TRANSLATOR] Attempting to correct position...')
-      for (let i = 0; i < 5; i++) {
-        translatorWindow.setPosition(displayX, displayY, false)
-        await new Promise(resolve => setTimeout(resolve, 20))
-        const [currentX, currentY] = translatorWindow.getPosition()
-        if (Math.abs(currentY - displayY) < 5) {
-          logger.info(`[DEBUG TRANSLATOR] Position corrected after ${i + 1} attempts: (${currentX}, ${currentY})`)
-          break
-        }
-      }
-      const [correctedX, correctedY] = translatorWindow.getPosition()
-      logger.info(`[DEBUG TRANSLATOR] Final position after correction: (${correctedX}, ${correctedY})`)
-    } else if (Math.abs(afterShowX - displayX) > 5 || Math.abs(afterShowY - displayY) > 5) {
-      // Small correction for minor position changes
-      logger.info('[DEBUG TRANSLATOR] Minor position change detected, correcting...')
+    // Verify position with tolerance (reduced from 5 attempts to single check)
+    const positionTolerance = 10
+    if (Math.abs(afterShowX - displayX) > positionTolerance || Math.abs(afterShowY - displayY) > positionTolerance) {
+      logger.warn(`[DEBUG TRANSLATOR] Position off by (${afterShowX - displayX}, ${afterShowY - displayY}), correcting...`)
       translatorWindow.setPosition(displayX, displayY, false)
-      await new Promise(resolve => setTimeout(resolve, 10))
+      // Single correction attempt (reduced from 5x 20ms = 100ms to 30ms)
+      await new Promise(resolve => setTimeout(resolve, 30))
     }
 
-    // DO NOT call focus() - it triggers space switching!
-    // The window is already shown and is usable without focus
-    logger.info('[DEBUG TRANSLATOR] Window shown without focus (prevents space switching)')
+    // Focus window after a short delay to ensure it's fully shown
+    // This prevents space switching while still giving the window focus
+    setTimeout(() => {
+      if (translatorWindow && !translatorWindow.isDestroyed() && translatorWindow.isVisible()) {
+        translatorWindow.focus()
+        logger.info('[DEBUG TRANSLATOR] Window focused after delay')
+      }
+    }, 100)
+    logger.info('[DEBUG TRANSLATOR] Window shown, will focus after delay')
 
     return translatorWindow
   }
@@ -388,6 +370,10 @@ async function createTranslatorWindow(selectedText: string) {
 
   translatorWindow.on('closed', () => {
     logger.info('[DEBUG TRANSLATOR] Translator window closed')
+    // Clean up all listeners to prevent memory leaks
+    if (translatorWindow && !translatorWindow.isDestroyed()) {
+      translatorWindow.removeAllListeners()
+    }
     translatorWindow = null
   })
 
@@ -461,6 +447,10 @@ async function createActionPopoverWindow(resultText: string, position: { x: numb
 
   // Clean up on close
   actionPopoverWindow.on('closed', () => {
+    // Clean up all listeners to prevent memory leaks
+    if (actionPopoverWindow && !actionPopoverWindow.isDestroyed()) {
+      actionPopoverWindow.removeAllListeners()
+    }
     actionPopoverWindow = null
   })
 
@@ -620,6 +610,12 @@ app.on('ready', async () => {
     getClipboardPreview: () => clipboardManager.getClipboardPreview(),
     pasteClipboardItem: (id: string) => clipboardManager.pasteItem(id),
     clearClipboardHistory: () => clipboardManager.clearHistory(),
+    hideMainWindow: () => {
+      if (mainWindow && !mainWindow.isDestroyed()) {
+        logger.info('Hiding palette window via callback')
+        mainWindow.hide()
+      }
+    },
     openTranslatorWidget: async (selectedText: string) => {
       logger.info('openTranslatorWidget called with text:', selectedText || capturedText)
       try {
@@ -763,16 +759,44 @@ app.on('ready', async () => {
     logger.info(`[DEBUG] Window position AFTER show: (${afterShowX}, ${afterShowY}), visible=${win.isVisible()}`)
     logger.info(`[DEBUG] Expected position: (${windowX}, ${windowY}), Actual position: (${afterShowX}, ${afterShowY})`)
 
-    // CRITICAL: DO NOT call focus() - it triggers space switching!
-    // The window is already shown with showInactive() and is usable without focus
-    // Blur events will still fire when window loses focus, so we don't need to focus it
-    // If focus is absolutely required for some functionality, it should be done conditionally
-    // and only when not in full-screen mode
-    logger.info('[DEBUG] Window shown without focus (prevents space switching)')
+    // Focus window after a short delay to ensure it's fully shown
+    // This prevents space switching while still giving the window focus
+    setTimeout(() => {
+      if (mainWindow && !mainWindow.isDestroyed() && mainWindow.isVisible()) {
+        mainWindow.focus()
+        logger.info('[DEBUG] Main window focused after delay')
+      }
+    }, 100)
+    logger.info('[DEBUG] Window shown, will focus after delay')
   })
 
 
-  app.on('will-quit', () => globalShortcut.unregisterAll())
+  app.on('will-quit', () => {
+    globalShortcut.unregisterAll()
+    
+    // Clean up all window references on app quit
+    if (mainWindow && !mainWindow.isDestroyed()) {
+      mainWindow.removeAllListeners()
+      mainWindow.destroy()
+      mainWindow = null
+    }
+    if (translatorWindow && !translatorWindow.isDestroyed()) {
+      translatorWindow.removeAllListeners()
+      translatorWindow.destroy()
+      translatorWindow = null
+    }
+    if (actionPopoverWindow && !actionPopoverWindow.isDestroyed()) {
+      actionPopoverWindow.removeAllListeners()
+      actionPopoverWindow.destroy()
+      actionPopoverWindow = null
+    }
+    
+    // Clean up widget manager windows
+    widgetManager.closeAll()
+    
+    // Clean up clipboard manager
+    clipboardManager.cleanup()
+  })
 })
 
 app.on('window-all-closed', () => {

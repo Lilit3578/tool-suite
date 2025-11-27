@@ -29,12 +29,28 @@ contextBridge.exposeInMainWorld('electronAPI', {
   // Get window position for popover positioning
   getWindowPosition: () =>
     ipcRenderer.invoke('get-window-position'),
-  // Component rendering events
-  onComponentInit: (cb: (event: any, data: { type: string; props?: any }) => void) =>
-    ipcRenderer.on('component-init', cb),
-  // Legacy events for backward compatibility
-  onWidgetInit: (cb: (event: any, payload: any) => void) => ipcRenderer.on('widget-init', cb),
-  onPaletteOpened: (cb: (event: any, data: any) => void) => ipcRenderer.on('palette-opened', cb),
+  // Component rendering events with cleanup support
+  onComponentInit: (cb: (event: any, data: { type: string; props?: any }) => void) => {
+    ipcRenderer.on('component-init', cb)
+    // Return cleanup function
+    return () => ipcRenderer.removeListener('component-init', cb)
+  },
+  // Legacy events for backward compatibility with cleanup support
+  onWidgetInit: (cb: (event: any, payload: any) => void) => {
+    ipcRenderer.on('widget-init', cb)
+    return () => ipcRenderer.removeListener('widget-init', cb)
+  },
+  onPaletteOpened: (cb: (event: any, data: any) => void) => {
+    ipcRenderer.on('palette-opened', cb)
+    return () => ipcRenderer.removeListener('palette-opened', cb)
+  },
   hideCurrentWindow: () => ipcRenderer.invoke('hide-current-window'),
-  onTranslatorInit: (cb: (event: any, data: any) => void) => ipcRenderer.on('translator-init', cb),
+  onTranslatorInit: (cb: (event: any, data: any) => void) => {
+    ipcRenderer.on('translator-init', cb)
+    return () => ipcRenderer.removeListener('translator-init', cb)
+  },
+  onCurrencyConverterInit: (cb: (event: any, data: any) => void) => {
+    ipcRenderer.on('currency-converter-init', cb)
+    return () => ipcRenderer.removeListener('currency-converter-init', cb)
+  },
 })

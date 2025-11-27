@@ -4,6 +4,7 @@ import type { WidgetManager } from '../../widgets/widget-manager'
 import type { WidgetAction } from '../../types'
 import { createLogger } from '../../utils/logger'
 import { settingsManager } from '../settings/settings-manager'
+import { validateTextInput, validateActionId, validateWidgetId, validateCurrencyCode, validateLanguageCode, validateNumericInput } from '../../../utils/validation'
 
 const logger = createLogger('IPC')
 
@@ -36,6 +37,7 @@ interface MainCallbacks {
   clearClipboardHistory?: () => void
   openTranslatorWidget: (selectedText: string) => Promise<BrowserWindow>
   showActionPopover: (resultText: string, position: { x: number; y: number }) => Promise<BrowserWindow>
+  hideMainWindow?: () => void
 }
 
 // Performance optimization: Cache Fuse.js instance and widget list
@@ -46,11 +48,51 @@ let cachedWidgetList: SearchableItem[] = []
 let widgetListVersion = 0 // Increment when widgets change to invalidate cache
 
 // Helper to invalidate search cache (call when widgets are registered/unregistered)
-export function invalidateSearchCache() {
+export function invalidateSearchCache(rebuild = false) {
   cachedFuseInstance = null
   cachedWidgetList = []
   widgetListVersion++
   logger.debug('Search cache invalidated')
+
+  // Optionally rebuild cache immediately for next search
+  if (rebuild) {
+    // Pre-build cache for next search (will be built on first get-suggestions call)
+    logger.debug('Search cache will be rebuilt on next search')
+  }
+}
+
+// Helper to update search cache incrementally when a single widget changes
+export function updateSearchCacheItem(widget: any) {
+  // Find and update existing item or add new one
+  const index = cachedWidgetList.findIndex(item => item.id === widget.id)
+  const searchableItem: SearchableItem = {
+    id: widget.id,
+    label: widget.label,
+    keywords: widget.keywords || [],
+    tags: widget.tags || [],
+    type: 'widget'
+  }
+
+  if (index >= 0) {
+    cachedWidgetList[index] = searchableItem
+  } else {
+    cachedWidgetList.push(searchableItem)
+      // Also add actions
+      ; (widget.actions ?? []).forEach((a: WidgetAction) => {
+        cachedWidgetList.push({
+          id: a.id,
+          label: a.label,
+          keywords: a.keywords || [],
+          tags: a.tags || [],
+          type: 'action'
+        })
+      })
+  }
+
+  // Invalidate Fuse instance to force rebuild with updated data
+  cachedFuseInstance = null
+  widgetListVersion++
+  logger.debug(`Search cache updated for widget: ${widget.id}`)
 }
 
 export function registerIpcHandlers(widgetManager: WidgetManager, callbacks?: MainCallbacks) {
@@ -76,7 +118,32 @@ export function registerIpcHandlers(widgetManager: WidgetManager, callbacks?: Ma
 
   ipcMain.handle('open-widget', async (_, id: string, payload?: any) => {
     logger.info('open-widget', id, payload)
+
+    // Validate widget ID
+    const idValidation = validateWidgetId(id)
+    if (!idValidation.valid) {
+      logger.warn('Invalid widget ID:', idValidation.error)
+      return { success: false, error: idValidation.error }
+    }
+
+    // Validate payload text if provided
+    if (payload?.selectedText) {
+      const textValidation = validateTextInput(payload.selectedText, { maxLength: 50000 })
+      if (!textValidation.valid) {
+        logger.warn('Invalid selected text:', textValidation.error)
+        return { success: false, error: textValidation.error }
+      }
+      payload.selectedText = textValidation.sanitized
+    }
+
     try {
+      // Hide palette window BEFORE opening widget to ensure it closes immediately
+      // This applies to ALL widgets (translator, clipboard-history, currency-converter, etc.)
+      if (callbacks?.hideMainWindow) {
+        callbacks.hideMainWindow()
+        logger.info('Hid palette window before opening widget:', id)
+      }
+
       // Special handling for translator widget - use the callback if available
       if (id === 'translator' && callbacks?.openTranslatorWidget) {
         const selectedText = payload?.selectedText || callbacks.getCapturedText()
@@ -84,6 +151,8 @@ export function registerIpcHandlers(widgetManager: WidgetManager, callbacks?: Ma
         await callbacks.openTranslatorWidget(selectedText)
         return { success: true }
       }
+
+      // Open widget for all other widget types (clipboard-history, currency-converter, etc.)
       await widgetManager.openWidgetWindow(id, payload)
       return { success: true }
     } catch (error) {
@@ -117,6 +186,25 @@ export function registerIpcHandlers(widgetManager: WidgetManager, callbacks?: Ma
 
   ipcMain.handle('execute-action', async (_, actionId: string, selectedText?: string) => {
     logger.info('execute-action', actionId, 'with text:', selectedText)
+
+    // Validate action ID
+    const actionIdValidation = validateActionId(actionId)
+    if (!actionIdValidation.valid) {
+      logger.warn('Invalid action ID:', actionIdValidation.error)
+      return { success: false, error: actionIdValidation.error }
+    }
+
+    // Validate selected text if provided
+    let validatedText: string | undefined = undefined
+    if (selectedText !== undefined) {
+      const textValidation = validateTextInput(selectedText, { maxLength: 50000, allowEmpty: true })
+      if (!textValidation.valid) {
+        logger.warn('Invalid selected text:', textValidation.error)
+        return { success: false, error: textValidation.error }
+      }
+      validatedText = textValidation.sanitized
+    }
+
     try {
       for (const w of widgetManager.getAllWidgets()) {
         const a = w.actions?.find((x: WidgetAction) => x.id === actionId)
@@ -124,7 +212,7 @@ export function registerIpcHandlers(widgetManager: WidgetManager, callbacks?: Ma
           logger.info('Found action handler for:', actionId)
           settingsManager.incrementUsage(actionId)
           try {
-            const result = await a.handler(selectedText)
+            const result = await a.handler(validatedText)
             logger.info('Action result:', result)
 
             // Check if the handler already returned a {success, result} object
@@ -153,6 +241,17 @@ export function registerIpcHandlers(widgetManager: WidgetManager, callbacks?: Ma
   ipcMain.handle('get-suggestions', (_, query: string) => {
     const startTime = Date.now()
 
+    // Validate query input
+    if (query !== undefined && query !== null && typeof query !== 'string') {
+      logger.warn('Invalid query type:', typeof query)
+      return []
+    }
+
+    // Sanitize query (trim and limit length)
+    const sanitizedQuery = typeof query === 'string'
+      ? query.trim().substring(0, 200) // Limit to 200 characters
+      : ''
+
     // Build widget list if cache is empty or stale
     if (cachedWidgetList.length === 0) {
       const widgets = widgetManager.getAllWidgets()
@@ -178,8 +277,8 @@ export function registerIpcHandlers(widgetManager: WidgetManager, callbacks?: Ma
       logger.debug(`Built widget list cache: ${cachedWidgetList.length} items`)
     }
 
-    // Normalize query: trim whitespace and lowercase
-    const q = (query || '').trim().toLowerCase()
+    // Normalize query: use sanitized query
+    const q = sanitizedQuery.toLowerCase()
 
     // If no query, return all items sorted by usage (for suggested section)
     // The UI will handle alphabetical sorting for widgets/actions sections
@@ -312,7 +411,31 @@ export function registerIpcHandlers(widgetManager: WidgetManager, callbacks?: Ma
   // Paste clipboard item handler
   ipcMain.handle('paste-clipboard-item', async (_, id: string) => {
     logger.info('paste-clipboard-item', id)
+
+    // Validate ID format (should be numeric timestamp string)
+    if (!id || typeof id !== 'string') {
+      return { success: false, error: 'Invalid clipboard item ID' }
+    }
+
+    const timestamp = parseInt(id, 10)
+    if (isNaN(timestamp) || timestamp <= 0) {
+      return { success: false, error: 'Invalid clipboard item ID format' }
+    }
+
     try {
+      // CRITICAL: Close clipboard history window BEFORE paste operation
+      // This ensures the window closes immediately when user selects an item
+      // The window must be closed first so focus can return to the original app
+      const windowClosed = widgetManager.closeClipboardHistoryWindow()
+      if (windowClosed) {
+        logger.info('Clipboard history window closed, proceeding with paste')
+        // Small delay to ensure window is fully closed and focus restored
+        await new Promise(resolve => setTimeout(resolve, 100))
+      } else {
+        logger.warn('Clipboard history window was not found, continuing with paste anyway')
+      }
+
+      // Now execute the paste operation
       if (callbacks?.pasteClipboardItem) {
         await callbacks.pasteClipboardItem(id)
         return { success: true }
@@ -326,13 +449,41 @@ export function registerIpcHandlers(widgetManager: WidgetManager, callbacks?: Ma
 
 
 
+
   // Convert currency handler
   ipcMain.handle('convert-currency', async (_, params: { from: string; to: string; amount: number }) => {
     logger.info('convert-currency', params)
+
+    // Validate currency codes
+    const fromValidation = validateCurrencyCode(params?.from)
+    if (!fromValidation.valid) {
+      return { success: false, error: `Invalid from currency: ${fromValidation.error}` }
+    }
+
+    const toValidation = validateCurrencyCode(params?.to)
+    if (!toValidation.valid) {
+      return { success: false, error: `Invalid to currency: ${toValidation.error}` }
+    }
+
+    // Validate amount
+    const amountValidation = validateNumericInput(params?.amount, {
+      min: 0,
+      max: 1e15, // Very large but reasonable limit
+      allowNegative: false,
+      allowDecimal: true
+    })
+    if (!amountValidation.valid) {
+      return { success: false, error: `Invalid amount: ${amountValidation.error}` }
+    }
+
     try {
       const widget = widgetManager.getWidget('currency-converter')
       if (hasCurrencyConverter(widget)) {
-        const result = await widget.convertCurrency(params.from, params.to, params.amount)
+        const result = await widget.convertCurrency(
+          fromValidation.sanitized!,
+          toValidation.sanitized!,
+          parseFloat(amountValidation.sanitized!)
+        )
         return result
       }
       return { success: false, error: 'Currency converter widget not found' }
@@ -352,11 +503,20 @@ export function registerIpcHandlers(widgetManager: WidgetManager, callbacks?: Ma
 
   // Save currency settings handler
   ipcMain.handle('save-currency-settings', (_, settings: { defaultFrom?: string; defaultTo?: string }) => {
+    // Validate currency codes if provided
     if (settings.defaultFrom) {
-      settingsManager.set('currencyDefaultFrom', settings.defaultFrom)
+      const fromValidation = validateCurrencyCode(settings.defaultFrom)
+      if (!fromValidation.valid) {
+        return { success: false, error: `Invalid defaultFrom currency: ${fromValidation.error}` }
+      }
+      settingsManager.set('currencyDefaultFrom', fromValidation.sanitized!)
     }
     if (settings.defaultTo) {
-      settingsManager.set('currencyDefaultTo', settings.defaultTo)
+      const toValidation = validateCurrencyCode(settings.defaultTo)
+      if (!toValidation.valid) {
+        return { success: false, error: `Invalid defaultTo currency: ${toValidation.error}` }
+      }
+      settingsManager.set('currencyDefaultTo', toValidation.sanitized!)
     }
     return { success: true }
   })

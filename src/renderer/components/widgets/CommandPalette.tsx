@@ -160,7 +160,12 @@ export default function CommandPalette() {
       if (data?.capturedText) setCapturedText(data.capturedText)
       else window.electronAPI.getCapturedText().then(setCapturedText)
     }
-    window.electronAPI.onPaletteOpened?.(onShow)
+    const cleanup = window.electronAPI.onPaletteOpened?.(onShow)
+    return () => {
+      if (typeof cleanup === 'function') {
+        cleanup()
+      }
+    }
   }, [])
 
   // Update suggestions with debouncing (150ms) for better performance
@@ -189,6 +194,7 @@ export default function CommandPalette() {
       active = false
       if (debounceTimerRef.current) {
         clearTimeout(debounceTimerRef.current)
+        debounceTimerRef.current = null
       }
     }
   }, [query])

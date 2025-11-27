@@ -82,6 +82,7 @@ export default function TranslatorWidget(props?: TranslatorWidgetProps) {
   const [translated, setTranslated] = useState("")
   const [loading, setLoading] = useState(false)
   const containerRef = useRef<HTMLDivElement>(null)
+  const pendingRequestsRef = useRef<Map<string, Promise<any>>>(new Map())
 
   // Initialize from props
   useEffect(() => {
@@ -102,10 +103,17 @@ export default function TranslatorWidget(props?: TranslatorWidgetProps) {
         .catch((err: any) => console.error("Error getting preferences:", err))
     }
 
+    let cleanup: (() => void) | undefined
     if (window.electronAPI?.onTranslatorInit) {
-      window.electronAPI.onTranslatorInit((_e: any, data: any) => {
+      cleanup = window.electronAPI.onTranslatorInit((_e: any, data: any) => {
         if (data?.selectedText) setInput(data.selectedText)
       })
+    }
+    
+    return () => {
+      if (typeof cleanup === 'function') {
+        cleanup()
+      }
     }
   }, [])
 
@@ -146,18 +154,46 @@ export default function TranslatorWidget(props?: TranslatorWidgetProps) {
       resizeWindow()
     })
 
-    resizeObserver.observe(containerRef.current)
+    const element = containerRef.current
+    if (element) {
+      resizeObserver.observe(element)
+    }
 
     return () => {
       clearTimeout(timeoutId)
+      if (element) {
+        resizeObserver.unobserve(element)
+      }
       resizeObserver.disconnect()
     }
   }, [input, translated, loading, sourceLang, targetLang])
 
   async function translateText(text: string, tgt: string) {
+    // Request deduplication: return existing request if in progress
+    const requestKey = `${text}:${tgt}`
+    if (pendingRequestsRef.current.has(requestKey)) {
+      console.log('Translator: Reusing existing request for:', requestKey)
+      try {
+        const result = await pendingRequestsRef.current.get(requestKey)
+        if (result?.success) {
+          setTranslated(result.result.translatedText || "")
+          if (result.result.detectedSourceLanguage) {
+            setSourceLang(result.result.detectedSourceLanguage)
+          }
+        }
+        return
+      } catch (error) {
+        console.error('Error in cached request:', error)
+        // Continue to make new request
+      }
+    }
+
     setLoading(true)
     try {
-      const res = await window.electronAPI.executeAction(`translate-${tgt}`, text)
+      const requestPromise = window.electronAPI.executeAction(`translate-${tgt}`, text)
+      pendingRequestsRef.current.set(requestKey, requestPromise)
+      
+      const res = await requestPromise
       console.log('[TranslatorWidget] Translation response:', res)
       console.log('[TranslatorWidget] res.success:', res.success)
       console.log('[TranslatorWidget] res.result:', res.result)
@@ -181,6 +217,8 @@ export default function TranslatorWidget(props?: TranslatorWidgetProps) {
       setTranslated(String(err))
     } finally {
       setLoading(false)
+      // Remove from pending requests after completion
+      pendingRequestsRef.current.delete(requestKey)
     }
   }
 

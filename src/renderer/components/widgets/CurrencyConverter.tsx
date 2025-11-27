@@ -112,6 +112,7 @@ export default function CurrencyConverterWidget(props?: CurrencyConverterWidgetP
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState("")
   const containerRef = useRef<HTMLDivElement>(null)
+  const pendingRequestsRef = useRef<Map<string, Promise<any>>>(new Map())
 
   // Initialize from props - run once on mount or when props change
   useEffect(() => {
@@ -231,24 +232,54 @@ export default function CurrencyConverterWidget(props?: CurrencyConverterWidgetP
       resizeWindow()
     })
 
-    resizeObserver.observe(containerRef.current)
+    const element = containerRef.current
+    if (element) {
+      resizeObserver.observe(element)
+    }
 
     return () => {
       clearTimeout(timeoutId)
+      if (element) {
+        resizeObserver.unobserve(element)
+      }
       resizeObserver.disconnect()
     }
   }, [amount, result, loading, error])
 
   async function convertCurrency(from: string, to: string, amt: number) {
+    // Request deduplication: return existing request if in progress
+    const requestKey = `${from}:${to}:${amt}`
+    if (pendingRequestsRef.current.has(requestKey)) {
+      console.log('CurrencyConverter: Reusing existing request for:', requestKey)
+      try {
+        const result = await pendingRequestsRef.current.get(requestKey)
+        if (result?.success) {
+          setResult(result.result)
+          setRate(result.rate)
+        } else {
+          setError(result.error || "Conversion failed")
+          setResult(null)
+          setRate(null)
+        }
+        return
+      } catch (error) {
+        console.error('Error in cached request:', error)
+        // Continue to make new request
+      }
+    }
+
     setLoading(true)
     setError("")
 
     try {
-      const res = await window.electronAPI.convertCurrency({
+      const requestPromise = window.electronAPI.convertCurrency({
         from,
         to,
         amount: amt,
       })
+      pendingRequestsRef.current.set(requestKey, requestPromise)
+      
+      const res = await requestPromise
 
       if (res.success) {
         setResult(res.result)
@@ -264,6 +295,8 @@ export default function CurrencyConverterWidget(props?: CurrencyConverterWidgetP
       setRate(null)
     } finally {
       setLoading(false)
+      // Remove from pending requests after completion
+      pendingRequestsRef.current.delete(requestKey)
     }
   }
 
