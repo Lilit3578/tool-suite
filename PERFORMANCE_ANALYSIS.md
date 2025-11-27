@@ -1201,7 +1201,7 @@ operations.forEach(op => batch.push(op))
 await Promise.all(batch)
 ```
 
-### 5. **Use Production Logging**
+### 5. **Use Production Logg
 ```typescript
 // Only log in development
 if (process.env.NODE_ENV !== 'production') {
